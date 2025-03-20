@@ -25,11 +25,21 @@ class OrderAPIView(APIView):
             return Response({'error': 'Invalid token'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            # JSONni to'g'ri formatga o'tkazish
             raw_data = request.data  
-            json_data = json.loads(json.dumps(raw_data))  # None -> null, ' -> "
 
-            order_number = json_data.get('order_number')
+            # None qiymatlarini null bilan almashtirish
+            def convert_none_to_null(obj):
+                if isinstance(obj, dict):
+                    return {k: convert_none_to_null(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_none_to_null(v) for v in obj]
+                elif obj is None:
+                    return ""  # yoki "null", agar null sifatida saqlash kerak bo'lsa
+                return obj
+            
+            cleaned_data = convert_none_to_null(raw_data)
+
+            order_number = cleaned_data.get('order_number')
 
             if not order_number:
                 return Response({'error': 'order_number is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -37,11 +47,11 @@ class OrderAPIView(APIView):
             # Orderni yaratish yoki yangilash
             order, created = Order.objects.update_or_create(
                 order_number=order_number,
-                defaults=json_data  
+                defaults=cleaned_data  
             )
 
             status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
             return Response(OrderSerializer(order).data, status=status_code)
 
-        except json.JSONDecodeError as e:
-            return Response({'detail': f'JSON parse error - {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'detail': f'Error - {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
