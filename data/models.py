@@ -18,4 +18,4 @@ class Order(models.Model):
     warehouse_name = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return self.order_number
+        return f"{self.order_number} - {self.status} - {self.warehouse_name}"
