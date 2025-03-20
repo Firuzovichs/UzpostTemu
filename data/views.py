@@ -12,8 +12,8 @@ logger = logging.getLogger('django')  # 'django' loggerini ishlatish
 
 class OrderAPIView(APIView):
     def post(self, request):
-        data = json.dumps(request.data)
-        logger.info(f"Received data: {data}")
+        logger.info(f"Received data: {request.data}")  # JSON dumps ishlatmaymiz
+
         # Tokenni Header orqali olish
         token_key = request.headers.get('Authorization')
 
@@ -24,16 +24,21 @@ class OrderAPIView(APIView):
         if token_key != SECRET_API_TOKEN:
             return Response({'error': 'Invalid token'}, status=status.HTTP_403_FORBIDDEN)
 
-        order_number = data.get('order_number')
+        try:
+            data = request.data  # JSON formatda kelgan ma'lumot
+            order_number = data.get('order_number')
 
-        if not order_number:
-            return Response({'error': 'order_number is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if not order_number:
+                return Response({'error': 'order_number is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Orderni yaratish yoki yangilash
-        order, created = Order.objects.update_or_create(
-            order_number=order_number,
-            defaults=data  # Barcha kelgan ma'lumotlarni yangilash
-        )
+            # Orderni yaratish yoki yangilash
+            order, created = Order.objects.update_or_create(
+                order_number=order_number,
+                defaults=data  # Barcha kelgan ma'lumotlarni yangilash
+            )
 
-        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
-        return Response(OrderSerializer(order).data, status=status_code)
+            status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+            return Response(OrderSerializer(order).data, status=status_code)
+
+        except json.JSONDecodeError as e:
+            return Response({'detail': f'JSON parse error - {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
