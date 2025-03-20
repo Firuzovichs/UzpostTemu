@@ -6,14 +6,14 @@ from .models import Order
 from rest_framework import status
 import logging
 from django.conf import settings
+import json
 SECRET_API_TOKEN = "asdkl;fj;lkasdfj8ifuh4uf-a1561***766#22$%^&*lkjhgfcdgbhj158"
 logger = logging.getLogger('django')  # 'django' loggerini ishlatish
 
 class OrderAPIView(APIView):
     def post(self, request):
-        data = request.data
+        data = json.dumps(request.data)
         logger.info(f"Received data: {data}")
-
         # Tokenni Header orqali olish
         token_key = request.headers.get('Authorization')
 
