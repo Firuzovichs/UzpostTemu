@@ -6,7 +6,7 @@ from .models import Order
 from rest_framework import status
 import logging
 from django.conf import settings
-
+SECRET_API_TOKEN = "asdkl;fj;lkasdfj8ifuh4uf-a1561***766#22$%^&*lkjhgfcdgbhj158"
 logger = logging.getLogger('django')  # 'django' loggerini ishlatish
 
 class OrderAPIView(APIView):
@@ -21,7 +21,7 @@ class OrderAPIView(APIView):
             return Response({'error': 'Authorization header is required'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Tokenni settings.py dagi qiymat bilan solishtirish
-        if token_key != settings.SECRET_API_TOKEN:
+        if token_key != SECRET_API_TOKEN:
             return Response({'error': 'Invalid token'}, status=status.HTTP_403_FORBIDDEN)
 
         order_number = data.get('order_number')
