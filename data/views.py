@@ -14,11 +14,11 @@ class OrderAPIView(APIView):
         data = request.data
         logger.info(f"Received data: {data}")
 
-        # Tokenni so‘rovdan olish
-        token_key = data.get('token')
+        # Tokenni Header orqali olish
+        token_key = request.headers.get('Authorization')
 
         if not token_key:
-            return Response({'error': 'Token is required'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Authorization header is required'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Tokenni settings.py dagi qiymat bilan solishtirish
         if token_key != settings.SECRET_API_TOKEN:
@@ -32,7 +32,7 @@ class OrderAPIView(APIView):
         # Orderni yaratish yoki yangilash
         order, created = Order.objects.update_or_create(
             order_number=order_number,
-            defaults={key: value for key, value in data.items() if key != "token"}  # Tokenni filter qilish
+            defaults=data  # Barcha kelgan ma'lumotlarni yangilash
         )
 
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
