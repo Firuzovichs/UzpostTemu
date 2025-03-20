@@ -12,7 +12,7 @@ logger = logging.getLogger('django')  # 'django' loggerini ishlatish
 
 class OrderAPIView(APIView):
     def post(self, request):
-        logger.info(f"Received data: {request.data}")  # JSON dumps ishlatmaymiz
+        logger.info(f"Received data: {request.data}")  
 
         # Tokenni Header orqali olish
         token_key = request.headers.get('Authorization')
@@ -25,8 +25,11 @@ class OrderAPIView(APIView):
             return Response({'error': 'Invalid token'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            data = request.data  # JSON formatda kelgan ma'lumot
-            order_number = data.get('order_number')
+            # JSONni to'g'ri formatga o'tkazish
+            raw_data = request.data  
+            json_data = json.loads(json.dumps(raw_data))  # None -> null, ' -> "
+
+            order_number = json_data.get('order_number')
 
             if not order_number:
                 return Response({'error': 'order_number is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -34,7 +37,7 @@ class OrderAPIView(APIView):
             # Orderni yaratish yoki yangilash
             order, created = Order.objects.update_or_create(
                 order_number=order_number,
-                defaults=data  # Barcha kelgan ma'lumotlarni yangilash
+                defaults=json_data  
             )
 
             status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
