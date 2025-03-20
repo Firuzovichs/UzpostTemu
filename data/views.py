@@ -12,10 +12,11 @@ logger = logging.getLogger('django')  # 'django' loggerini ishlatish
         
 class OrderAPIView(APIView):
     def post(self, request):
-        data = request.data
+        raw_data = request.data  # JSON emas, oddiy dict
 
         # Logga kelgan ma'lumotni yozish
-        logger.info(f"Received data: {data}")
+        logger.info(f"Received raw data: {raw_data}")
+
         token_key = request.headers.get('Authorization')
 
         if not token_key:
@@ -25,7 +26,20 @@ class OrderAPIView(APIView):
         if token_key != SECRET_API_TOKEN:
             return Response({'error': 'Invalid token'}, status=status.HTTP_403_FORBIDDEN)
 
-        order_number = data.get('order_number')
+        # ✅ Kelgan ma'lumotni JSON formatiga o‘tkazish (rekursiv)
+        def convert_to_json_compatible(obj):
+            if isinstance(obj, dict):
+                return {str(k): convert_to_json_compatible(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_to_json_compatible(v) for v in obj]
+            elif obj is None:
+                return None  # yoki "null" agar string sifatida kerak bo‘lsa
+            return obj
+
+        # 🔄 Python dict → JSON formatdagi dict
+        cleaned_data = convert_to_json_compatible(raw_data)
+
+        order_number = cleaned_data.get("order_number")
 
         if not order_number:
             return Response({'error': 'order_number is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -33,7 +47,7 @@ class OrderAPIView(APIView):
         # Order mavjud bo‘lsa, yangilaydi, yo‘q bo‘lsa, yaratadi
         order, created = Order.objects.update_or_create(
             order_number=order_number,
-            defaults=data  # Barcha kelgan ma'lumotlarni yangilash
+            defaults=cleaned_data  
         )
 
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
