@@ -22,7 +22,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("mail-items/", MailItemAPIView.as_view(), name="mail-items"),
-    path('/api/v1/order/',MailItemUpdateStatus.as_view(), name="update-status")
+    path('api/v1/order/',MailItemUpdateStatus.as_view(), name="update-status")
 
 ]
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'])
