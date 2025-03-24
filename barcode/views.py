@@ -12,6 +12,12 @@ import time
 from collections import Counter
 from django.db import models
 from datetime import timedelta
+from collections import Counter
+from django.db import models
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import MailItem
+
 class BatchStatisticsAPIView(APIView):
     def get(self, request):
         # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
@@ -20,11 +26,9 @@ class BatchStatisticsAPIView(APIView):
             .annotate(total_weight=models.Sum("weight"))
         )
 
-        # Statuslarni hisoblash uchun Counter
-        status_counter = Counter()
-
-        # Har bir batch uchun weight yig‘indisi va statuslarni hisoblash
+        # Har bir batch uchun natijani saqlash
         result = {}
+
         for batch in batch_stats:
             batch_name = batch["batch"]
             total_weight = batch["total_weight"]
@@ -32,20 +36,23 @@ class BatchStatisticsAPIView(APIView):
             # Ushbu batchdagi barcha MailItem obyektlarini olish
             items = MailItem.objects.filter(batch=batch_name)
 
+            # Statuslarni hisoblash uchun Counter
+            status_counter = Counter()
+
             # Oxirgi statuslarni hisoblash
             for item in items:
                 if item.last_event_name:  # List bo‘sh bo‘lmasa
                     last_status = item.last_event_name[-1]  # Oxirgi elementni olish
                     status_counter[last_status] += 1
 
+            # Natijalarni batch bo‘yicha saqlash
             result[batch_name] = {
                 "total_weight": total_weight,
+                "status_counts": status_counter  # Har bir batch uchun statuslar
             }
 
-        return Response({
-            "batch_statistics": result,
-            "status_counts": status_counter
-        })
+        return Response({"batch_statistics": result})
+
     
 
 
