@@ -9,7 +9,47 @@ from django.utils.dateparse import parse_datetime
 from django.db import IntegrityError
 import threading
 import time
+from collections import Counter
+from django.db import models
 from datetime import timedelta
+class BatchStatisticsAPIView(APIView):
+    def get(self, request):
+        # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
+        batch_stats = (
+            MailItem.objects.values("batch")
+            .annotate(total_weight=models.Sum("weight"))
+        )
+
+        # Statuslarni hisoblash uchun Counter
+        status_counter = Counter()
+
+        # Har bir batch uchun weight yig‘indisi va statuslarni hisoblash
+        result = {}
+        for batch in batch_stats:
+            batch_name = batch["batch"]
+            total_weight = batch["total_weight"]
+
+            # Ushbu batchdagi barcha MailItem obyektlarini olish
+            items = MailItem.objects.filter(batch=batch_name)
+
+            # Oxirgi statuslarni hisoblash
+            for item in items:
+                if item.last_event_name:  # List bo‘sh bo‘lmasa
+                    last_status = item.last_event_name[-1]  # Oxirgi elementni olish
+                    status_counter[last_status] += 1
+
+            result[batch_name] = {
+                "total_weight": total_weight,
+            }
+
+        return Response({
+            "batch_statistics": result,
+            "status_counts": status_counter
+        })
+    
+
+
+
 
 class MailItemUpdateStatus(APIView):
     def post(self, request):
