@@ -24,17 +24,33 @@ class MailItemUpdateStatus(APIView):
             mail_item = MailItem.objects.get(barcode=barcode)
 
             mail_item.city = warehouse_name  
+            
+            if status_text  == "sent_to_customs":
+                mail_item.last_event_name.append("Sent to customs")
+                mail_item.last_event_date = event_date
 
-            if status_text:
-                mail_item.last_event_name.append(status_text)
+            if status_text  == "ready_for_issue":
+                mail_item.last_event_name.append("Ready for Delivery")
+                mail_item.last_event_date = event_date
 
-            if status_text == "Order Received":
-                mail_item.received_date = event_date
+            if status_text  == "out_for_delivery":
+                mail_item.last_event_name.append("Out for delivery")
+                mail_item.last_event_date = event_date
 
-            mail_item.last_event_date = event_date
+            if status_text  in ["completed","issued_to_recipient"]:
+                mail_item.last_event_name.append("Deliver item")
+                mail_item.last_event_date = event_date
+
+            if status_text == "in_sorting_facility" and warehouse_name == "Xalqaro - Temu":
+                if mail_item.received_date == None:
+                    mail_item.received_date = event_date
+                    mail_item.last_event_name.append("Arrived at office of exchange")
+                    mail_item.last_event_date = event_date
 
             mail_item.save(update_fields=["city", "last_event_name", "received_date", "last_event_date", "updated_at"])
-            if status_text == "Return from customs":
+            if status_text == "returned_from_customs":
+                mail_item.last_event_name.append("Returned from customs")
+                mail_item.last_event_date = event_date
                 threading.Thread(target=self.delayed_update1, args=(barcode,)).start()
 
             return Response({"message": "MailItem updated successfully"}, status=200)
