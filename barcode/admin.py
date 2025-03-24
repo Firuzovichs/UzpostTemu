@@ -21,7 +21,6 @@ from django.utils.dateparse import parse_datetime
 class XMLUploadForm(forms.Form):
     xml_file = forms.FileField()
 
-@admin.register(MailItem)
 class MailItemAdmin(admin.ModelAdmin):
     list_display = ("barcode", "batch", "weight", "send_date", "last_event_name")
     change_list_template = "admin/mailitem_changelist.html"
