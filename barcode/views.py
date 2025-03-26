@@ -23,16 +23,16 @@ class BatchStatisticsAPIView(APIView):
     def get(self, request):
         # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
         batch_stats = (
-            MailItem.objects.values("batch")
-            .annotate(total_count=Count("barcode")) 
-        )
+    MailItem.objects.values("batch")
+    .annotate(total_count=Count("barcode"))  # Har bir batch bo‘yicha barcode soni
+)
 
         # Har bir batch uchun natijani saqlash
         result = {}
 
         for batch in batch_stats:
             batch_name = batch["batch"]
-            total_weight = batch["total_weight"]
+            total_count = batch["total_count"]
 
             # Ushbu batchdagi barcha MailItem obyektlarini olish
             items = MailItem.objects.filter(batch=batch_name)
@@ -48,7 +48,7 @@ class BatchStatisticsAPIView(APIView):
 
             # Natijalarni batch bo‘yicha saqlash
             result[batch_name] = {
-                "total_weight": total_weight,
+                "total_count": total_count,
                 "status_counts": status_counter  # Har bir batch uchun statuslar
             }
 
