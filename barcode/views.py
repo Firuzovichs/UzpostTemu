@@ -17,13 +17,14 @@ from django.db import models
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import MailItem
+from django.db.models import Count
 
 class BatchStatisticsAPIView(APIView):
     def get(self, request):
         # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
         batch_stats = (
             MailItem.objects.values("batch")
-            .count("barcode")
+            .annotate(total_count=Count("barcode")) 
         )
 
         # Har bir batch uchun natijani saqlash
