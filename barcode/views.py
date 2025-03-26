@@ -75,6 +75,7 @@ class MailItemUpdateStatus(APIView):
             
             mail_item.last_event_name.append(status_text)
             mail_item.last_event_date = event_date
+            mail_item.save(update_fields=['city', 'last_event_name', 'last_event_date','updated_at'])
 
             return Response({"message": "MailItem updated successfully"}, status=200)
 
