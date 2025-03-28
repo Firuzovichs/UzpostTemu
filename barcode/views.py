@@ -19,6 +19,28 @@ from rest_framework.views import APIView
 from .models import MailItem
 from django.db.models import Count
 
+
+class MailItemListView(APIView):
+    def get(self, request):
+        mail_items = MailItem.objects.order_by('-updated_at')[:6]  # Oxirgi 6 ta yozuvni olish
+        data = []
+        
+        for item in mail_items:
+            last_event_index = len(item.last_event_name) - 1 if item.last_event_name else None
+            data.append({
+                "barcode": item.barcode,
+                "weight": item.weight,
+                "send_date": item.send_date,
+                "received_date": item.received_date,
+                "last_event_date": item.last_event_date,
+                "last_event_name": item.last_event_name[last_event_index] if last_event_index is not None else None,
+                "city": item.city,
+            })
+        
+        return Response(data, status=status.HTTP_200_OK)
+
+
+
 class BatchStatisticsAPIView(APIView):
     def get(self, request):
         # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
@@ -82,29 +104,6 @@ class MailItemUpdateStatus(APIView):
 
         except MailItem.DoesNotExist:
             return Response({"error": f"MailItem with barcode {barcode} not found"}, status=status.HTTP_404_NOT_FOUND)
-    # def delayed_update1(self, barcode):
-    #     time.sleep(600) 
-
-    #     try:
-    #         mail_item = MailItem.objects.get(barcode=barcode)
-    #         mail_item.last_event_name.append("Send to domestic location")
-    #         mail_item.last_event_date += timedelta(minutes=10)
-    #         mail_item.save(update_fields=['last_event_name', 'last_event_date', 'updated_at'])
-    #         threading.Thread(target=self.delayed_update2, args=(barcode,)).start()
-    #     except MailItem.DoesNotExist:
-    #         pass
-    # def delayed_update2(self, barcode):
-    #     time.sleep(300) 
-
-    #     try:
-    #         mail_item = MailItem.objects.get(barcode=barcode)
-    #         mail_item.last_event_name.append("Receive item at delivery office")
-    #         mail_item.last_event_date += timedelta(minutes=5)
-    #         mail_item.save(update_fields=['last_event_name', 'last_event_date', 'updated_at'])
-    #     except MailItem.DoesNotExist:
-    #         pass   
-
-
 
 
 
