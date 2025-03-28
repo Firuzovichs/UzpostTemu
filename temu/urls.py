@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView
+from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
@@ -24,6 +24,7 @@ urlpatterns = [
     path("mail-items/", MailItemAPIView.as_view(), name="mail-items"),
     path('api/v1/order/',MailItemUpdateStatus.as_view(), name="update-status"),
     path("batch-statistics/", BatchStatisticsAPIView.as_view(), name="batch-statistics"),
-    path("barcode-6/", MailItemListView.as_view(), name="batch-statistics"),
+    path("barcode-6/", MailItemListView.as_view(), name="barcode-6"),
+    path("barcode-all/", MailItemAllListView.as_view(), name="barcode-all"),
 ]
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'])

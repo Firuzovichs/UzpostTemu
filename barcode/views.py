@@ -19,7 +19,12 @@ from rest_framework.views import APIView
 from .models import MailItem
 from django.db.models import Count
 
-
+class MailItemAllListView(APIView):
+    def get(self, request):
+        mail_items = MailItem.objects.order_by('-updated_at')
+        serializer = MailItemSerializer(mail_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 class MailItemListView(APIView):
     def get(self, request):
         mail_items = MailItem.objects.order_by('-updated_at')[:6]  # Oxirgi 6 ta yozuvni olish
