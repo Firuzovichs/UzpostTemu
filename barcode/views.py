@@ -18,6 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import MailItem
 from django.db.models import Count
+from django.utils.timezone import now
 
 class MailItemAllListView(APIView):
     def get(self, request):
@@ -99,9 +100,57 @@ class MailItemUpdateStatus(APIView):
             mail_item = MailItem.objects.get(barcode=barcode)
 
             mail_item.city = warehouse_name  
+            if status_text == "unassigned":
+                mail_item.last_event_name.append(status_text)
+                mail_item.received_date = event_date
+                mail_item.last_event_date = event_date
+                mail_item.save(update_fields=['city', 'last_event_name','received_date', 'last_event_date','updated_at'])
+
+            if status_text == "sent_to_customs":
+                mail_item.last_event_name.append(status_text)
+                mail_item.last_event_date = event_date
+            if status_text == "returned_from_customs":
+                mail_item.last_event_name.append(status_text)
+                mail_item.last_event_date = event_date
+                mail_item.save(update_fields=['city', 'last_event_name', 'last_event_date', 'updated_at'])
+
+                def update_to_send_to_domestic_location():
+                    try:
+                        delayed_mail_item = MailItem.objects.get(barcode=barcode)
+                        delayed_mail_item.last_event_name.append("send_to_domestic_location")
+                        delayed_mail_item.last_event_date = now()
+                        delayed_mail_item.save(update_fields=['last_event_name', 'last_event_date', 'updated_at'])
+
+                        def update_to_receive_at_delivery_office():
+                            try:
+                                final_mail_item = MailItem.objects.get(barcode=barcode)
+                                final_mail_item.last_event_name.append("receive_at_delivery_office")
+                                final_mail_item.last_event_date = now()
+                                final_mail_item.save(update_fields=['last_event_name', 'last_event_date', 'updated_at'])
+                            except MailItem.DoesNotExist:
+                                pass
+
+                        # 5 daqiqa (300 sekund) kutib yangi statusni qo'shish
+                        timer_2 = threading.Timer(300, update_to_receive_at_delivery_office)
+                        timer_2.start()
+
+                    except MailItem.DoesNotExist:
+                        pass  
+
+                timer_1 = threading.Timer(600, update_to_send_to_domestic_location)
+                timer_1.start()
+            if status_text == "out_for_delivery":
+                mail_item.last_event_name.append(status_text)
+                mail_item.last_event_date = event_date
+            if status_text == "ready_for_delivery":
+                mail_item.last_event_name.append(status_text)
+                mail_item.last_event_date = event_date
+            if status_text == "completed" or status_text == "issued_to_recipient":
+                mail_item.last_event_name.append("completed")
+                mail_item.last_event_date = event_date
+
+
             
-            mail_item.last_event_name.append(status_text)
-            mail_item.last_event_date = event_date
             mail_item.save(update_fields=['city', 'last_event_name', 'last_event_date','updated_at'])
 
             return Response({"message": "MailItem updated successfully"}, status=200)
