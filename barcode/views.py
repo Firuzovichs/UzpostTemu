@@ -22,6 +22,39 @@ from rest_framework.views import APIView
 from .models import MailItem
 from django.db.models import Count
 from django.utils.timezone import now
+from django.db.models import Sum, Count
+
+class BatchStatsView(APIView):
+    def get(self, request):
+        # Barcha batchlarni olish
+        batches = MailItem.objects.values('batch').distinct()  # Faqat unikal batchlar
+
+        batch_stats = []
+        for batch in batches:
+            batch_name = batch['batch']
+            # Har bir batchga tegishli RZ va CZ bilan boshlanadigan barcodelarni ajratish
+            rz_items = MailItem.objects.filter(batch=batch_name, barcode__startswith='RZ')
+            cz_items = MailItem.objects.filter(batch=batch_name, barcode__startswith='CZ')
+
+            # RZ va CZ bo‘yicha statistikani olish
+            rz_count = rz_items.count()  # RZ bilan boshlanadigan barcodelar soni
+            cz_count = cz_items.count()  # CZ bilan boshlanadigan barcodelar soni
+
+            rz_weight_sum = rz_items.aggregate(Sum('weight'))['weight__sum'] or 0  # RZ weightlari yig‘indisi
+            cz_weight_sum = cz_items.aggregate(Sum('weight'))['weight__sum'] or 0  # CZ weightlari yig‘indisi
+
+            # Batch uchun statistikani qo‘shish
+            batch_stats.append({
+                'batch': batch_name,
+                'rz_count': rz_count,
+                'cz_count': cz_count,
+                'rz_weight_sum': rz_weight_sum,
+                'cz_weight_sum': cz_weight_sum
+            })
+
+        return Response(batch_stats, status=status.HTTP_200_OK)
+
+
 class BarcodeInfoView(APIView):
     def post(self, request):
         barcodes = request.data.get("barcodes", [])
@@ -37,7 +70,7 @@ class BarcodeInfoView(APIView):
         headers = {'Content-Type': 'application/json'}
 
         try:
-            login_response = requests.post(login_url, headers=headers, data=json.dumps(login_data))
+            login_response = requests.post(login_url, headers=headers, data=json.dumps(login_data),timeout=10)
             login_response.raise_for_status()
             login_data = login_response.json()
             id_token = login_data.get('data', {}).get('id_token')
@@ -53,7 +86,7 @@ class BarcodeInfoView(APIView):
         for barcode in barcodes:
             try:
                 user_url = f'https://prodapi.pochta.uz/api/v1/customer/orders?page=0&size=20&state=all&use_solr=true&refresh=false&with_totals=true&search_type=order_number&status=completed&search={barcode}'
-                user_response = requests.get(user_url, headers=user_headers)
+                user_response = requests.get(user_url, headers=user_headers,timeout=10)
                 user_response.raise_for_status()
                 user_data = user_response.json()
                 user_list = user_data.get('data', {}).get('list', [])
@@ -64,7 +97,7 @@ class BarcodeInfoView(APIView):
                     continue
                 
                 another_api_url = f'https://prodapi.pochta.uz/api/v1/customer/order/{user_id}/mobile'
-                another_response = requests.get(another_api_url, headers=user_headers)
+                another_response = requests.get(another_api_url, headers=user_headers,timeout=10)
                 another_response.raise_for_status()
                 another_data = another_response.json()
 
