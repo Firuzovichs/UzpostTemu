@@ -11,6 +11,7 @@ import threading
 import time
 import requests
 import json
+from rest_framework.pagination import PageNumberPagination
 from collections import Counter
 from django.db import models
 from datetime import timedelta
@@ -79,14 +80,23 @@ class BarcodeInfoView(APIView):
                 results.append({"barcode": barcode, "error": "Request failed", "details": str(e)})
 
         return Response(results, status=status.HTTP_200_OK)
-
+class MailItemPagination(PageNumberPagination):
+    page_size = 10  # Har bir sahifada nechta mail item ko‘rsatilishini belgilash
+    page_size_query_param = 'page_size'  # So'rov parametri orqali sahifa o'lchamini belgilash imkoniyati
+    max_page_size = 100  # Maksimal sahifa o'lchami
 
 
 class MailItemAllListView(APIView):
     def get(self, request):
         mail_items = MailItem.objects.order_by('-updated_at')
-        serializer = MailItemSerializer(mail_items, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        paginator = MailItemPagination()  # Pagination obyektini yaratish
+        paginated_mail_items = paginator.paginate_queryset(mail_items, request)  # Querysetni sahifalash
+        
+        serializer = MailItemSerializer(paginated_mail_items, many=True)
+        
+        # Sahifalangan javobni qaytarish
+        return paginator.get_paginated_response(serializer.data)
     
 class MailItemListView(APIView):
     def get(self, request):
