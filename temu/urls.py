@@ -16,12 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView
+from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView,BarcodeInfoView
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("mail-items/", MailItemAPIView.as_view(), name="mail-items"),
+    path("barcodes-info/", BarcodeInfoView.as_view(), name="barcode-info"),
     path('api/v1/order/',MailItemUpdateStatus.as_view(), name="update-status"),
     path("batch-statistics/", BatchStatisticsAPIView.as_view(), name="batch-statistics"),
     path("barcode-6/", MailItemListView.as_view(), name="barcode-6"),

@@ -9,6 +9,8 @@ from django.utils.dateparse import parse_datetime
 from django.db import IntegrityError
 import threading
 import time
+import requests
+import json
 from collections import Counter
 from django.db import models
 from datetime import timedelta
@@ -19,6 +21,66 @@ from rest_framework.views import APIView
 from .models import MailItem
 from django.db.models import Count
 from django.utils.timezone import now
+class BarcodeInfoView(APIView):
+    def post(self, request):
+        barcodes = request.data.get("barcodes", [])
+        
+        if not isinstance(barcodes, list) or len(barcodes) > 10:
+            return Response({"error": "Barcodes must be a list with a maximum of 10 items."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        login_url = 'https://prodapi.pochta.uz/api/v1/customer/authenticate?context=customer'
+        login_data = {
+            'username': '075584875543',  # Foydalanuvchi nomini kiriting
+            'password': 'Admin1234'   # Parolni kiriting
+        }
+        headers = {'Content-Type': 'application/json'}
+
+        try:
+            login_response = requests.post(login_url, headers=headers, data=json.dumps(login_data))
+            login_response.raise_for_status()
+            login_data = login_response.json()
+            id_token = login_data.get('data', {}).get('id_token')
+        except requests.RequestException as e:
+            return Response({"error": "Failed to authenticate", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        user_headers = {
+            'Authorization': f'Bearer {id_token}',
+            'Content-Type': 'application/json'
+        }
+
+        results = []
+        for barcode in barcodes:
+            try:
+                user_url = f'https://prodapi.pochta.uz/api/v1/customer/orders?page=0&size=20&state=all&use_solr=true&refresh=false&with_totals=true&search_type=order_number&status=completed&search={barcode}'
+                user_response = requests.get(user_url, headers=user_headers)
+                user_response.raise_for_status()
+                user_data = user_response.json()
+                user_list = user_data.get('data', {}).get('list', [])
+                user_id = user_list[0].get('id') if user_list else None
+
+                if not user_id:
+                    results.append({"barcode": barcode, "error": "Not found"})
+                    continue
+                
+                another_api_url = f'https://prodapi.pochta.uz/api/v1/customer/order/{user_id}/mobile'
+                another_response = requests.get(another_api_url, headers=user_headers)
+                another_response.raise_for_status()
+                another_data = another_response.json()
+
+                results.append({
+                    "barcode": barcode,
+                    "recipient_signature_url": another_data.get('data', {}).get('actual_recipient_signature'),
+                    "recipient_card_url": another_data.get('data', {}).get('actual_recipient_id_card'),
+                    "name": another_data.get('data', {}).get('recipient_data', {}).get('customer', {}).get('name', "Noma'lum"),
+                    "address": another_data.get('data', {}).get('recipient_data', {}).get('address', "Noma'lum"),
+                    "last_status_date": another_data.get('data', {}).get('last_status_date', "Noma'lum")
+                })
+            except requests.RequestException as e:
+                results.append({"barcode": barcode, "error": "Request failed", "details": str(e)})
+
+        return Response(results, status=status.HTTP_200_OK)
+
+
 
 class MailItemAllListView(APIView):
     def get(self, request):
@@ -158,23 +220,6 @@ class MailItemUpdateStatus(APIView):
 
         except MailItem.DoesNotExist:
             return Response({"error": f"MailItem with barcode {barcode} not found"}, status=status.HTTP_404_NOT_FOUND)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
