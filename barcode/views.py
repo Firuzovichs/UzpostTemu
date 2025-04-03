@@ -19,7 +19,7 @@ from collections import Counter
 from django.db import models
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import MailItem
+from .models import MailItem,TemuUser
 from django.db.models import Count
 from django.utils.timezone import now
 from django.db.models import Sum, Count
@@ -30,12 +30,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class ObtainTokenView(APIView):
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         login = request.data.get('login')
         password = request.data.get('password')
-        
-        user = get_user_model().objects.filter(login=login).first()
+
+        user = TemuUser.objects.filter(login=login).first()  # get_user_model() o‘rniga
         if user and user.check_password(password):
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -43,6 +43,7 @@ class ObtainTokenView(APIView):
                 'access': str(refresh.access_token),
             })
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
