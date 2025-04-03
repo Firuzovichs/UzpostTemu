@@ -1,6 +1,8 @@
 
 from django.contrib import admin
-from .models import MailItem
+from .models import MailItem, TemuUser
+
+admin.site.register(TemuUser)
 
 @admin.register(MailItem)
 class OrderAdmin(admin.ModelAdmin):
