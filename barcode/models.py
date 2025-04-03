@@ -1,4 +1,5 @@
 from django.db import models
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class TemuUser(models.Model):
     login = models.CharField(max_length=255, unique=True)
@@ -6,7 +7,12 @@ class TemuUser(models.Model):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
-    
+    def get_tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
     def set_password(self, raw_password):
         from django.contrib.auth.hashers import make_password
         self.password = make_password(raw_password)

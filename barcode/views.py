@@ -37,11 +37,8 @@ class ObtainTokenView(APIView):
 
         user = TemuUser.objects.filter(login=login).first()  # get_user_model() o‘rniga
         if user and user.check_password(password):
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
+            return Response(user.get_tokens())
+
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
