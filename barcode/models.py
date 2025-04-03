@@ -1,6 +1,6 @@
 from django.db import models
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import AbstractBaseUser,BaseUserManager,PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser,BaseUserManager,PermissionsMixin,Group, Permission
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, first_name, last_name, password=None, **extra_fields):
@@ -31,7 +31,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
-
+    groups = models.ManyToManyField(
+        Group, 
+        related_name='customuser_set',  # Bu yerda related_name qo'shildi
+        blank=True
+    )
+    
+    user_permissions = models.ManyToManyField(
+        Permission, 
+        related_name='customuser_permissions_set',  # Bu yerda related_name qo'shildi
+        blank=True
+    )
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
