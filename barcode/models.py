@@ -1,5 +1,23 @@
 from django.db import models
 
+class TemuUser(models.Model):
+    login = models.CharField(max_length=255, unique=True)
+    password = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    
+    def set_password(self, raw_password):
+        from django.contrib.auth.hashers import make_password
+        self.password = make_password(raw_password)
+    
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
+    
+    def __str__(self):
+        return self.login
+
 class MailItem(models.Model):
     batch = models.CharField(max_length=255, null=True, blank=True)  # ✅ Bo‘sh bo‘lishi mumkin
     barcode = models.CharField(max_length=50, unique=True)  # Majburiy
