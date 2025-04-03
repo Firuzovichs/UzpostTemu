@@ -1,9 +1,29 @@
 
 from django.contrib import admin
 from .models import MailItem, CustomUser
+from django.contrib.auth.admin import UserAdmin
 
-admin.site.register(CustomUser)
+class CustomUserAdmin(UserAdmin):
+    model = CustomUser
+    list_display = ('phone_number', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser', 'created_at')
+    list_filter = ('is_active', 'is_staff', 'is_superuser')
+    search_fields = ('phone_number', 'first_name', 'last_name')
+    ordering = ('created_at',)
+    fieldsets = (
+        (None, {'fields': ('phone_number', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('created_at',)}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('phone_number', 'password1', 'password2', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser'),
+        }),
+    )
 
+# Registering CustomUser model in admin
+admin.site.register(CustomUser, CustomUserAdmin)
 @admin.register(MailItem)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("barcode", "batch", "last_event_name")  # Jadvaldagi ustunlar

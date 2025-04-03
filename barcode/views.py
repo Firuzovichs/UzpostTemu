@@ -29,16 +29,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
 from django.contrib.auth import authenticate
 from .serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 
-class MyTokenObtainPairView(APIView):
-
-    def post(self, request, *args, **kwargs):
-        serializer = TokenObtainPairSerializer(data=request.data)
-        if serializer.is_valid():
-            return Response(serializer.validated_data)
-        return Response({"detail": "Invalid credentials"}, status=400)
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = TokenObtainPairSerializer
 class BatchStatsView(APIView):
     def get(self, request):
         # Barcha batchlarni olish
