@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView,BarcodeInfoView,BatchStatsView,CreateUserView,MyTokenObtainPairView
+from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView,BarcodeInfoView,BatchStatsView,MyTokenObtainPairView
 from rest_framework.urlpatterns import format_suffix_patterns
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -29,7 +29,6 @@ urlpatterns = [
     path("barcode-6/", MailItemListView.as_view(), name="barcode-6"),
     path("barcode-all/", MailItemAllListView.as_view(), name="barcode-all"),
     path('batch-stats/', BatchStatsView.as_view(), name='batch-stats'),
-    path('create/', CreateUserView.as_view(), name='create_user'),
     path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

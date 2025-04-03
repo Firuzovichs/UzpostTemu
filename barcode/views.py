@@ -26,15 +26,12 @@ from django.db.models import Sum, Count
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import  UserSerializer
 from rest_framework import generics
 from django.contrib.auth import authenticate
 from .serializers import TokenObtainPairSerializer
 
 
-class CreateUserView(generics.CreateAPIView):
-    queryset = get_user_model().objects.all()
-    serializer_class = UserSerializer
+
 class MyTokenObtainPairView(APIView):
 
     def post(self, request, *args, **kwargs):
