@@ -2,13 +2,9 @@
 from django.contrib import admin
 from .models import MailItem, CustomUser
 from django.contrib.auth.admin import UserAdmin
-
 class CustomUserAdmin(admin.ModelAdmin):
     # 'created_at' maydonini faqat ko'rsatish uchun readonly qilish
     readonly_fields = ('created_at',)
-    
-    # Agar maydonni to'liq chiqarishni xohlasangiz, faqat ko'rsatilganini qilish
-    fields = ('phone_number', 'first_name', 'last_name', 'password', 'is_active', 'is_staff', 'is_superuser', 'created_at')
     
     # Maydonlarni chiqarish tartibini belgilash
     fieldsets = (
