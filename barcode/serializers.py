@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import MailItem
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import TemuUser
 from django.contrib.auth import get_user_model
 
 class MailItemSerializer(serializers.ModelSerializer):
