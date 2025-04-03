@@ -100,7 +100,7 @@ SIMPLE_JWT = {
 }
 WSGI_APPLICATION = 'temu.wsgi.application'
 
-
+AUTH_USER_MODEL = 'barcode.CustomUser'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
