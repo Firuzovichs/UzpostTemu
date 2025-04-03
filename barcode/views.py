@@ -30,18 +30,26 @@ from rest_framework import generics
 from django.contrib.auth import authenticate
 from .serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db.models import Q
 
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = TokenObtainPairSerializer
+
 class BatchStatsView(APIView):
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
 
     def get(self, request):
+        # Request parametridan batch filtri olish
+        batch_filter = request.GET.get('batch')  # Batch parametri
 
-        # Barcha batchlarni olish
-        batches = MailItem.objects.values('batch').distinct()  # Faqat unikal batchlar
+        # Agar batch parametri kiritilgan bo'lsa, faqat shu batch bo'yicha filtrlanadi
+        if batch_filter:
+            batches = MailItem.objects.filter(batch=batch_filter).values('batch').distinct()
+        else:
+            # Agar batch filtri bo'lmasa, barcha batchlarni olish
+            batches = MailItem.objects.values('batch').distinct()
 
         batch_stats = []
         for batch in batches:
@@ -67,7 +75,6 @@ class BatchStatsView(APIView):
             })
 
         return Response(batch_stats, status=status.HTTP_200_OK)
-
 
 class BarcodeInfoView(APIView):
     permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
@@ -136,52 +143,84 @@ class MailItemPagination(PageNumberPagination):
 
 
 class MailItemAllListView(APIView):
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
 
     def get(self, request):
-        mail_items = MailItem.objects.order_by('-updated_at')
+        # Query parametrlardan filter uchun imkoniyat yaratish
+        filters = Q()
+
+        # Agar query parametrlar mavjud bo'lsa, ularni filtrlash
+        batch = request.GET.get('batch')
+        if batch:
+            filters &= Q(batch__icontains=batch)  # Batch bo‘yicha filtr
+
+        barcode = request.GET.get('barcode')
+        if barcode:
+            filters &= Q(barcode__icontains=barcode)  # Barcode bo‘yicha filtr
+
+        weight = request.GET.get('weight')
+        if weight:
+            try:
+                weight = float(weight)
+                filters &= Q(weight=weight)  # Weight bo‘yicha filtr
+            except ValueError:
+                return Response({"error": "Invalid weight parameter"}, status=400)
+
+        send_date = request.GET.get('send_date')
+        if send_date:
+            filters &= Q(send_date=send_date)  # Send date bo‘yicha filtr
+
+        received_date = request.GET.get('received_date')
+        if received_date:
+            filters &= Q(received_date=received_date)  # Received date bo‘yicha filtr
+
+        last_event_date = request.GET.get('last_event_date')
+        if last_event_date:
+            filters &= Q(last_event_date=last_event_date)  # Last event date bo‘yicha filtr
+
+        last_event_name = request.GET.get('last_event_name')
+        if last_event_name:
+            filters &= Q(last_event_name__icontains=last_event_name)  # Last event name bo‘yicha filtr
+
+        city = request.GET.get('city')
+        if city:
+            filters &= Q(city__icontains=city)  # City bo‘yicha filtr
+
+        # MailItem modelini filtratsiya qilish
+        mail_items = MailItem.objects.filter(filters).order_by('-updated_at')
         
+        # Sahifalashni qo‘shish
         paginator = MailItemPagination()  # Pagination obyektini yaratish
         paginated_mail_items = paginator.paginate_queryset(mail_items, request)  # Querysetni sahifalash
         
+        # Serializer orqali ma'lumotlarni qaytarish
         serializer = MailItemSerializer(paginated_mail_items, many=True)
         
         # Sahifalangan javobni qaytarish
         return paginator.get_paginated_response(serializer.data)
     
-class MailItemListView(APIView):
-
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
-
-    def get(self, request):
-        mail_items = MailItem.objects.order_by('-updated_at')[:6]  # Oxirgi 6 ta yozuvni olish
-        data = []
-        
-        for item in mail_items:
-            last_event_index = len(item.last_event_name) - 1 if item.last_event_name else None
-            data.append({
-                "barcode": item.barcode,
-                "weight": item.weight,
-                "send_date": item.send_date,
-                "received_date": item.received_date,
-                "last_event_date": item.last_event_date,
-                "last_event_name": item.last_event_name[last_event_index] if last_event_index is not None else None,
-                "city": item.city,
-            })
-        
-        return Response(data, status=status.HTTP_200_OK)
 
 
 
 class BatchStatisticsAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
 
     def get(self, request):
+        # Request parametridan batch filtri olish
+        batch_filter = request.GET.get('batch')  # Batch parametri
+
+        # Agar batch parametri kiritilgan bo'lsa, faqat shu batch bo'yicha filtrlanadi
+        if batch_filter:
+            batches = MailItem.objects.filter(batch=batch_filter).values("batch").distinct()
+        else:
+            # Agar batch filtri bo'lmasa, barcha batchlarni olish
+            batches = MailItem.objects.values("batch").distinct()
+
         # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
         batch_stats = (
-    MailItem.objects.values("batch")
-    .annotate(total_count=Count("barcode"))  # Har bir batch bo‘yicha barcode soni
-)
+            batches
+            .annotate(total_count=Count("barcode"))  # Har bir batch bo‘yicha barcode soni
+        )
 
         # Har bir batch uchun natijani saqlash
         result = {}
@@ -209,7 +248,6 @@ class BatchStatisticsAPIView(APIView):
             }
 
         return Response({"batch_statistics": result})
-
     
 
 
