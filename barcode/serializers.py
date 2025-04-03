@@ -25,12 +25,16 @@ class TokenObtainPairSerializer(serializers.Serializer):
         phone_number = attrs.get("phone_number")
         password = attrs.get("password")
         
-        user = CustomUser.objects.get(phone_number=phone_number)
+        # Foydalanuvchi ma'lumotlarini olish
+        try:
+            user = CustomUser.objects.get(phone_number=phone_number)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("Invalid phone number or password.")
         
-        if user and user.check_password(password):
+        # Oddiy parolni tekshirish
+        if user.password == password:
+            # Token yaratish
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            return {'access': access_token, 'refresh': str(refresh)}
+            return {'access': str(refresh.access_token), 'refresh': str(refresh)}
         else:
             raise serializers.ValidationError("Invalid phone number or password.")
-
