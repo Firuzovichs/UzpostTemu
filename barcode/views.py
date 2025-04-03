@@ -23,7 +23,7 @@ from .models import MailItem
 from django.db.models import Count
 from django.utils.timezone import now
 from django.db.models import Sum, Count
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny,IsAuthenticated
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
@@ -36,7 +36,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = TokenObtainPairSerializer
 class BatchStatsView(APIView):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+
     def get(self, request):
+
         # Barcha batchlarni olish
         batches = MailItem.objects.values('batch').distinct()  # Faqat unikal batchlar
 
@@ -67,6 +70,8 @@ class BatchStatsView(APIView):
 
 
 class BarcodeInfoView(APIView):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+
     def post(self, request):
         barcodes = request.data.get("barcodes", [])
         
@@ -131,6 +136,8 @@ class MailItemPagination(PageNumberPagination):
 
 
 class MailItemAllListView(APIView):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+
     def get(self, request):
         mail_items = MailItem.objects.order_by('-updated_at')
         
@@ -143,6 +150,9 @@ class MailItemAllListView(APIView):
         return paginator.get_paginated_response(serializer.data)
     
 class MailItemListView(APIView):
+
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+
     def get(self, request):
         mail_items = MailItem.objects.order_by('-updated_at')[:6]  # Oxirgi 6 ta yozuvni olish
         data = []
@@ -164,6 +174,8 @@ class MailItemListView(APIView):
 
 
 class BatchStatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+
     def get(self, request):
         # Barcha batchlar bo‘yicha weight yig‘indisini hisoblash
         batch_stats = (
@@ -282,6 +294,8 @@ class MailItemUpdateStatus(APIView):
 
 
 class MailItemAPIView(APIView):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+
     parser_classes = [XMLParser]  
 
     def post(self, request):
