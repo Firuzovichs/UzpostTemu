@@ -19,7 +19,7 @@ from collections import Counter
 from django.db import models
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import MailItem,TemuUser
+from .models import MailItem
 from django.db.models import Count
 from django.utils.timezone import now
 from django.db.models import Sum, Count
