@@ -3,26 +3,23 @@ from django.contrib import admin
 from .models import MailItem, CustomUser
 from django.contrib.auth.admin import UserAdmin
 
-class CustomUserAdmin(UserAdmin):
-    model = CustomUser
-    list_display = ('phone_number', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser', 'created_at')
-    list_filter = ('is_active', 'is_staff', 'is_superuser')
-    search_fields = ('phone_number', 'first_name', 'last_name')
-    ordering = ('created_at',)
+class CustomUserAdmin(admin.ModelAdmin):
+    # 'created_at' maydonini faqat ko'rsatish uchun readonly qilish
+    readonly_fields = ('created_at',)
+    
+    # Agar maydonni to'liq chiqarishni xohlasangiz, faqat ko'rsatilganini qilish
+    fields = ('phone_number', 'first_name', 'last_name', 'password', 'is_active', 'is_staff', 'is_superuser', 'created_at')
+    
+    # Maydonlarni chiqarish tartibini belgilash
     fieldsets = (
-        (None, {'fields': ('phone_number', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('created_at',)}),
-    )
-    add_fieldsets = (
         (None, {
-            'classes': ('wide',),
-            'fields': ('phone_number', 'password1', 'password2', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser'),
+            'fields': ('phone_number', 'first_name', 'last_name', 'password', 'is_active', 'is_staff', 'is_superuser')
+        }),
+        ('Additional Info', {
+            'fields': ('created_at',),
         }),
     )
 
-# Registering CustomUser model in admin
 admin.site.register(CustomUser, CustomUserAdmin)
 @admin.register(MailItem)
 class OrderAdmin(admin.ModelAdmin):
