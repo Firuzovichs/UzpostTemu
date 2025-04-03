@@ -10,6 +10,23 @@ class TemuUser(AbstractUser):
     USERNAME_FIELD = 'login'  # Django login uchun `login` ni ishlatadi
     REQUIRED_FIELDS = ['email']  # Superuser yaratishda talab qilinadigan maydonlar
 
+    # related_name qo'shish
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='temuuser_set',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups'
+    )
+    
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='temuuser_set',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions'
+    )
+
     def get_tokens(self):
         refresh = RefreshToken.for_user(self)
         return {
