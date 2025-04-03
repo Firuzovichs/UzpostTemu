@@ -21,14 +21,10 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    static_token = models.CharField(max_length=100, unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=15, unique=True)
     first_name = models.CharField(max_length=30, null=True, blank=True)
     last_name = models.CharField(max_length=30, null=True, blank=True)
-    image = models.ImageField(upload_to='users/', null=True, blank=True)
-    region = models.CharField(max_length=50, null=True, blank=True)
-    district = models.CharField(max_length=50, null=True, blank=True)
-    post_index = models.CharField(max_length=50, null=True, blank=True)
+    password = models.CharField(max_length=50, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
@@ -46,11 +42,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ordering = ('id',)
         indexes = [
             models.Index(fields=['id', 'phone_number']),
-            models.Index(fields=['post_index', 'region', 'district']),  # Quyida optimallashtirish
         ]
 
     def str(self):
         return self.phone_number
+    
 class MailItem(models.Model):
     batch = models.CharField(max_length=255, null=True, blank=True)  # ✅ Bo‘sh bo‘lishi mumkin
     barcode = models.CharField(max_length=50, unique=True)  # Majburiy
