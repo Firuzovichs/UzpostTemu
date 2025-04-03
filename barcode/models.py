@@ -30,17 +30,34 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
+    # Customize groups and user_permissions with related_name to avoid clashes
+    groups = models.ManyToManyField(
+        Group, 
+        related_name="customuser_set",  # Updated related_name
+        blank=True
+    )
+    
+    user_permissions = models.ManyToManyField(
+        Permission, 
+        related_name="customuser_permissions_set",  # Updated related_name
+        blank=True
+    )
+
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = ['first_name', 'last_name']
+
+    class Meta:
+        db_table = 'customuser'
+        verbose_name = "Foydalanuvchilar"
+        verbose_name_plural = "Foydalanuvchilar"
+        ordering = ('id',)
+        indexes = [
+            models.Index(fields=['id', 'phone_number']),
+        ]
 
     def __str__(self):
         return self.phone_number
 
-    class Meta:
-        db_table = 'customuser'
-        verbose_name = "User"
-        verbose_name_plural = "Users"
-        
 class MailItem(models.Model):
     batch = models.CharField(max_length=255, null=True, blank=True)  # ✅ Bo‘sh bo‘lishi mumkin
     barcode = models.CharField(max_length=50, unique=True)  # Majburiy
