@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
 ]
-AUTH_USER_MODEL = 'barcode.CustomUser'
+AUTH_USER_MODEL = 'barcode.models.CustomUser'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  
