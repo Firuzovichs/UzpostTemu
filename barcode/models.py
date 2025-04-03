@@ -4,8 +4,8 @@ from django.contrib.auth.models import AbstractUser
 
 class TemuUser(AbstractUser):
     login = models.CharField(max_length=255, unique=True)  # username o‘rniga
-    email = models.EmailField(unique=True)  # Email majburiy
-    password = models.CharField(max_length=255)
+    email = models.EmailField(unique=True,default=None)  # Email majburiy
+    password = models.CharField(max_length=255,blank=False)
 
     USERNAME_FIELD = 'login'  # Django login uchun `login` ni ishlatadi
     REQUIRED_FIELDS = ['email']  # Superuser yaratishda talab qilinadigan maydonlar
