@@ -16,8 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView,BarcodeInfoView,BatchStatsView,CreateUserView,MyTokenObtainPairView,TokenRefreshView
+from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemListView,MailItemAllListView,BarcodeInfoView,BatchStatsView,CreateUserView,MyTokenObtainPairView
 from rest_framework.urlpatterns import format_suffix_patterns
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
