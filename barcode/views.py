@@ -26,34 +26,31 @@ from django.db.models import Sum, Count
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import ObtainTokenSerializer, UserSerializer
 
 
 class ObtainTokenView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        login = request.data.get('login')
-        password = request.data.get('password')
+        serializer = ObtainTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data
+            return Response(user.get_tokens(), status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
-        user = TemuUser.objects.filter(login=login).first()  # get_user_model() o‘rniga
-        if user and user.check_password(password):
-            return Response(user.get_tokens())
-
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-class RefreshTokenView(APIView):
+class RegisterUserView(APIView):
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
-        refresh_token = request.data.get('refresh')
-        try:
-            refresh = RefreshToken(refresh_token)
-            return Response({
-                'access': str(refresh.access_token)
-            })
-        except Exception:
-            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        user = TemuUser.objects.create(
+            login=data['login'],
+            email=data['email']
+        )
+        user.set_password(data['password'])  # Parolni xeshlash
+        user.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 class BatchStatsView(APIView):
     def get(self, request):

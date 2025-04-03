@@ -1,26 +1,22 @@
 from django.db import models
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.models import AbstractUser
 
-class TemuUser(models.Model):
-    login = models.CharField(max_length=255, unique=True)
+class TemuUser(AbstractUser):
+    login = models.CharField(max_length=255, unique=True)  # username o‘rniga
+    email = models.EmailField(unique=True)  # Email majburiy
     password = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = 'login'  # Django login uchun `login` ni ishlatadi
+    REQUIRED_FIELDS = ['email']  # Superuser yaratishda talab qilinadigan maydonlar
+
     def get_tokens(self):
         refresh = RefreshToken.for_user(self)
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
-    def set_password(self, raw_password):
-        from django.contrib.auth.hashers import make_password
-        self.password = make_password(raw_password)
-    
-    def check_password(self, raw_password):
-        from django.contrib.auth.hashers import check_password
-        return check_password(raw_password, self.password)
-    
+
     def __str__(self):
         return self.login
 
