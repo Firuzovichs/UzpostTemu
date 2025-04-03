@@ -2,40 +2,15 @@ from django.db import models
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import AbstractUser
 
-class TemuUser(AbstractUser):
-    login = models.CharField(max_length=255, unique=True)  # username o‘rniga
-    email = models.EmailField(unique=True,default=None)  # Email majburiy
-    password = models.CharField(max_length=255,blank=False)
-
-    USERNAME_FIELD = 'login'  # Django login uchun `login` ni ishlatadi
-    REQUIRED_FIELDS = ['email']  # Superuser yaratishda talab qilinadigan maydonlar
-
-    # related_name qo'shish
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='temuuser_set',
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups'
-    )
-    
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='temuuser_set',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions'
-    )
-
-    def get_tokens(self):
-        refresh = RefreshToken.for_user(self)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token)
-        }
+class CustomUser(AbstractUser):
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    birth_date = models.DateField(null=True, blank=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    is_active_user = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.login
+        return self.username
 
 class MailItem(models.Model):
     batch = models.CharField(max_length=255, null=True, blank=True)  # ✅ Bo‘sh bo‘lishi mumkin

@@ -27,31 +27,68 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import ObtainTokenSerializer, UserSerializer
+from rest_framework import generics
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.contrib.auth import authenticate
 
 
-class ObtainTokenView(APIView):
-    permission_classes = [AllowAny]
+class CreateUserView(generics.CreateAPIView):
+    queryset = get_user_model().objects.all()
+    serializer_class = UserSerializer
+class MyTokenObtainPairView(TokenObtainPairView):
+    """
+    Foydalanuvchi logini va parolini tekshirib, JWT token juftligini qaytaradi.
+    """
+    permission_classes = [AllowAny]  # Bu endpointga kirish uchun hech qanday authentifikatsiya talab etilmaydi
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Foydalanuvchi nomi va parolini tekshirib, tokenlarni qaytaradi.
+        """
+        username = request.data.get("username")
+        password = request.data.get("password")
+        
+        user = authenticate(username=username, password=password)
+        
+        if user is not None:
+            # Foydalanuvchi mavjud bo'lsa, JWT tokenlarini qaytaramiz
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            
+            # Tokenlarni o'z ichiga olgan javobni qaytarish
+            return Response({
+                'refresh': refresh_token,
+                'access': access_token
+            })
+        else:
+            return Response({"detail": "Foydalanuvchi yoki parol noto'g'ri!"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    def post(self, request):
-        serializer = ObtainTokenSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            return Response(user.get_tokens(), status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
-
-class RegisterUserView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        data = request.data
-        user = TemuUser.objects.create(
-            login=data['login'],
-            email=data['email']
-        )
-        user.set_password(data['password'])  # Parolni xeshlash
-        user.save()
-        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
-
+class TokenRefreshView(TokenRefreshView):
+    """
+    Refresh token orqali yangi access token olish.
+    """
+    permission_classes = [AllowAny]  # Refresh token endpointi ham ochiq bo'ladi
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Refresh tokenini tekshirib, yangi access token qaytaradi.
+        """
+        refresh_token = request.data.get("refresh")
+        
+        if refresh_token:
+            try:
+                # Refresh tokeni yordamida yangi access token olish
+                refresh = RefreshToken(refresh_token)
+                access_token = str(refresh.access_token)
+                
+                return Response({
+                    'access': access_token
+                })
+            except Exception as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({"detail": "Refresh token topilmadi!"}, status=status.HTTP_400_BAD_REQUEST)
 class BatchStatsView(APIView):
     def get(self, request):
         # Barcha batchlarni olish

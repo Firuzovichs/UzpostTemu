@@ -27,7 +27,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['45.138.158.253','localhost']
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -40,7 +39,9 @@ INSTALLED_APPS = [
     'barcode',
     'rest_framework',
     'corsheaders',
+
 ]
+AUTH_USER_MODEL = 'barcode.CustomUser'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  
