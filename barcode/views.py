@@ -78,6 +78,8 @@ def parse_xlsx(file_path):
     return records
 
 class UploadFilesView(View):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
+
     def post(self, request):
         if 'xml_file' not in request.FILES or 'xlsx_file' not in request.FILES:
             return JsonResponse({'error': 'Both XML and XLSX files are required'}, status=400)
