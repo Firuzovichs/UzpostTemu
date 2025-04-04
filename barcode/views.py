@@ -371,6 +371,7 @@ class BatchStatisticsAPIView(APIView):
 
 
 class MailItemUpdateStatus(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         data = request.data
         
