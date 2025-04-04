@@ -149,42 +149,46 @@ class MailItemAllListView(APIView):
         # Query parametrlardan filter uchun imkoniyat yaratish
         filters = Q()
 
-        # Agar query parametrlar mavjud bo'lsa, ularni filtrlash
+        # Barcha mumkin bo‘lgan filter parametrlari
         batch = request.GET.get('batch')
         if batch:
-            filters &= Q(batch__icontains=batch)  # Batch bo‘yicha filtr
+            filters &= Q(batch__icontains=batch)  # Batch bo‘yicha filter
 
         barcode = request.GET.get('barcode')
         if barcode:
-            filters &= Q(barcode__icontains=barcode)  # Barcode bo‘yicha filtr
+            filters &= Q(barcode__icontains=barcode)  # Barcode bo‘yicha filter
 
         weight = request.GET.get('weight')
         if weight:
             try:
                 weight = float(weight)
-                filters &= Q(weight=weight)  # Weight bo‘yicha filtr
+                filters &= Q(weight=weight)  # Weight bo‘yicha filter
             except ValueError:
                 return Response({"error": "Invalid weight parameter"}, status=400)
 
-        send_date = request.GET.get('send_date')
-        if send_date:
-            filters &= Q(send_date=send_date)  # Send date bo‘yicha filtr
-
-        received_date = request.GET.get('received_date')
-        if received_date:
-            filters &= Q(received_date=received_date)  # Received date bo‘yicha filtr
-
-        last_event_date = request.GET.get('last_event_date')
-        if last_event_date:
-            filters &= Q(last_event_date=last_event_date)  # Last event date bo‘yicha filtr
-
-        last_event_name = request.GET.get('last_event_name')
-        if last_event_name:
-            filters &= Q(last_event_name__icontains=last_event_name)  # Last event name bo‘yicha filtr
-
         city = request.GET.get('city')
         if city:
-            filters &= Q(city__icontains=city)  # City bo‘yicha filtr
+            filters &= Q(city__icontains=city)  # City bo‘yicha filter
+
+        # Last event name (listning oxirgi elementi bo‘yicha filter)
+        last_event_name = request.GET.get('last_event_name')
+        if last_event_name:
+            filters &= Q(last_event_name__contains=[last_event_name])  # List oxirgi elementi bo‘yicha qidirish
+
+        # Sana bo‘yicha filtrlash
+        date_fields = ['send_date', 'received_date', 'last_event_date']
+        for field in date_fields:
+            date_value = request.GET.get(field)
+            if date_value:
+                filters &= Q(**{f"{field}": date_value})  # Aniq sana bo‘yicha filter
+
+            from_date = request.GET.get(f"{field}_from")
+            if from_date:
+                filters &= Q(**{f"{field}__gte": from_date})  # Sana oraliq boshlanishi
+
+            to_date = request.GET.get(f"{field}_to")
+            if to_date:
+                filters &= Q(**{f"{field}__lte": to_date})  # Sana oraliq tugashi
 
         # MailItem modelini filtratsiya qilish
         mail_items = MailItem.objects.filter(filters).order_by('-updated_at')
