@@ -36,7 +36,8 @@ import pandas as pd
 from django.views import View
 from django.core.files.storage import FileSystemStorage
 import os
-
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 def parse_xml(file_path):
     tree = ET.parse(file_path)
@@ -78,7 +79,7 @@ def parse_xlsx(file_path):
     return records
 
 class UploadFilesView(View):
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
+    @method_decorator(csrf_exempt)  # CSRF tokenni tekshirishni o‘chirish
 
     def post(self, request):
         if 'xml_file' not in request.FILES or 'xlsx_file' not in request.FILES:
