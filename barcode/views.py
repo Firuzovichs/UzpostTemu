@@ -58,6 +58,7 @@ def parse_xml(file_path):
     
     return data
 
+# XLSX faylni tahlil qilish
 def parse_xlsx(file_path):
     df = pd.read_excel(file_path)
     records = {}
@@ -78,8 +79,9 @@ def parse_xlsx(file_path):
     
     return records
 
+# Fayllarni yuklash va tahlil qilish
+@method_decorator(csrf_exempt, name='dispatch')  # CSRFni o'chirish
 class UploadFilesView(View):
-    @method_decorator(csrf_exempt)  # CSRF tokenni tekshirishni o‘chirish
 
     def post(self, request):
         if 'xml_file' not in request.FILES or 'xlsx_file' not in request.FILES:
@@ -116,7 +118,6 @@ class UploadFilesView(View):
         os.remove(xlsx_path)
         
         return JsonResponse({'message': 'Files processed successfully'})
-
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
