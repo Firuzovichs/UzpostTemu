@@ -1,4 +1,6 @@
 import xml.etree.ElementTree as ET
+import datetime
+import csv
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -39,113 +41,70 @@ import os
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
-def parse_xml(file_path):
-    tree = ET.parse(file_path)
-    root = tree.getroot()
-    namespace = {'ips': 'http://upu.int/ips'}
-    
-    data = []
-    for mail_item in root.findall('ips:MailItem', namespace):
-        barcode = mail_item.get('ItemId')
-        weight = float(mail_item.find('ips:ItemWeight', namespace).text)
-        batch = mail_item.find('ips:Misc1', namespace).text
-        
-        data.append({
-            'barcode': barcode,
-            'weight': weight,
-            'batch': batch
-        })
-    
-    return data
-
-# XLSX faylni tahlil qilish
-def parse_xlsx(file_path):
-    df = pd.read_excel(file_path)
+def parse_csv(file_path):
     records = {}
-    
-    for _, row in df.iterrows():
-        barcode = str(row['Номер заказа']).strip()
-        last_event_name = row['Текущий статус']
-        received_date = row['Дата создания']
-        send_date = row['Дата доставки']
-        last_event_date = row['Дата последнего обновления статуса']
-        
-        records[barcode] = {
-            'last_event_name': last_event_name,
-            'received_date': received_date,
-            'send_date': send_date,
-            'last_event_date': last_event_date
-        }
-    
+    with open(file_path, mode='r', encoding='utf-8') as file:
+        csv_reader = csv.reader(file, delimiter=',')
+        header = next(csv_reader)  # Sarlavha qatorini o'tkazib yuboramiz
+        for row in csv_reader:
+            barcode = row[0].strip()
+            last_event_name = row[1]
+            received_date = row[2]
+            send_date = row[3]
+            last_event_date = row[4]
+            
+            # Datetime qiymatlarini to'g'ri ishlashini ta'minlash
+            received_date = parse_date(received_date)
+            send_date = parse_date(send_date)
+            last_event_date = parse_date(last_event_date)
+            
+            records[barcode] = {
+                'last_event_name': last_event_name,
+                'received_date': received_date,
+                'send_date': send_date,
+                'last_event_date': last_event_date,
+            }
     return records
 
+# Sana matnini datetime obyektiga o'zgartirish
+def parse_date(date_str):
+    if date_str:
+        try:
+            return datetime.datetime.strptime(date_str, '%d-%m-%Y %H:%M:%S')
+        except ValueError:
+            return None
+    return None
+
 # Fayllarni yuklash va tahlil qilish
-@method_decorator(csrf_exempt, name='dispatch')  # CSRFni o'chirish
 class UploadFilesView(View):
 
     def post(self, request):
-        if 'xml_file' not in request.FILES or 'xlsx_file' not in request.FILES:
-            return JsonResponse({'error': 'Both XML and XLSX files are required'}, status=400)
+        if 'csv_file' not in request.FILES:
+            return JsonResponse({'error': 'CSV fayli talab qilinadi'}, status=400)
         
-        xml_file = request.FILES['xml_file']
-        xlsx_file = request.FILES['xlsx_file']
+        csv_file = request.FILES['csv_file']
         
         fs = FileSystemStorage()
-        xml_filename = fs.save(xml_file.name, xml_file)
-        xlsx_filename = fs.save(xlsx_file.name, xlsx_file)
+        csv_filename = fs.save(csv_file.name, csv_file)
+        csv_path = fs.path(csv_filename)
         
-        xml_path = fs.path(xml_filename)
-        xlsx_path = fs.path(xlsx_filename)
+        csv_data = parse_csv(csv_path)
         
-        xml_data = parse_xml(xml_path)
-        xlsx_data = parse_xlsx(xlsx_path)
-        
-        for item in xml_data:
-            barcode = item['barcode']
-            # Datetime qiymatlarini to'g'ri ishlashini ta'minlash
-            received_date = xlsx_data.get(barcode, {}).get('received_date')
-            send_date = xlsx_data.get(barcode, {}).get('send_date')
-            last_event_date = xlsx_data.get(barcode, {}).get('last_event_date')
-            
-            # Agar datetime qiymatlari mavjud bo'lsa, ularni timezone-aware qilish
-            if received_date:
-                if isinstance(received_date, str):  # Agar bu satr bo'lsa, datetime formatini parse qilamiz
-                    received_date = pd.to_datetime(received_date, errors='coerce')
-                if pd.notna(received_date):  # NaTni tekshirish
-                    if not timezone.is_aware(received_date):
-                        received_date = timezone.make_aware(received_date, timezone.get_current_timezone())
-            
-            if send_date:
-                if isinstance(send_date, str):  # Agar bu satr bo'lsa, datetime formatini parse qilamiz
-                    send_date = pd.to_datetime(send_date, errors='coerce')
-                if pd.notna(send_date):  # NaTni tekshirish
-                    if not timezone.is_aware(send_date):
-                        send_date = timezone.make_aware(send_date, timezone.get_current_timezone())
-            
-            if last_event_date:
-                if isinstance(last_event_date, str):  # Agar bu satr bo'lsa, datetime formatini parse qilamiz
-                    last_event_date = pd.to_datetime(last_event_date, errors='coerce')
-                if pd.notna(last_event_date):  # NaTni tekshirish
-                    if not timezone.is_aware(last_event_date):
-                        last_event_date = timezone.make_aware(last_event_date, timezone.get_current_timezone())
-            
+        for barcode, data in csv_data.items():
             # MailItem modelini yangilash yoki yaratish
             mail_item, created = MailItem.objects.update_or_create(
                 barcode=barcode,
                 defaults={
-                    'batch': item['batch'],
-                    'weight': item['weight'],
-                    'last_event_name': xlsx_data.get(barcode, {}).get('last_event_name', ''),
-                    'received_date': received_date,
-                    'send_date': send_date,
-                    'last_event_date': last_event_date,
+                    'last_event_name': data['last_event_name'],
+                    'received_date': data['received_date'],
+                    'send_date': data['send_date'],
+                    'last_event_date': data['last_event_date'],
                 }
             )
         
-        os.remove(xml_path)
-        os.remove(xlsx_path)
+        os.remove(csv_path)
         
-        return JsonResponse({'message': 'Files processed successfully'})
+        return JsonResponse({'message': 'Fayl muvaffaqiyatli qayta ishlandi'})
 frontend_html = '''
 <!DOCTYPE html>
 <html lang="en">
