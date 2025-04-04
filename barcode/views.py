@@ -119,6 +119,51 @@ class UploadFilesView(View):
         
         return JsonResponse({'message': 'Files processed successfully'})
 
+frontend_html = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        input, button { margin: 10px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Upload XML and XLSX Files</h2>
+    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" id="xmlFile" name="xml_file" accept=".xml" required>
+        <input type="file" id="xlsxFile" name="xlsx_file" accept=".xlsx" required>
+        <button type="submit">Upload</button>
+    </form>
+    <p id="status"></p>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            let formData = new FormData();
+            formData.append('xml_file', document.getElementById('xmlFile').files[0]);
+            formData.append('xlsx_file', document.getElementById('xlsxFile').files[0]);
+            
+            let response = await fetch('/upload/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value  // CSRF tokenni yuborish
+                }
+            });
+            let result = await response.json();
+            document.getElementById('status').innerText = result.message || result.error;
+        });
+    </script>
+</body>
+</html>
+'''
+
+def frontend_view(request):
+    return HttpResponse(frontend_html)
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = TokenObtainPairSerializer
