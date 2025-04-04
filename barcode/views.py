@@ -8,7 +8,7 @@ from rest_framework_xml.parsers import XMLParser
 from django.utils.dateparse import parse_datetime
 from django.db import IntegrityError
 import threading
-import time
+from django.utils import timezone
 import requests
 import json
 from rest_framework.pagination import PageNumberPagination
@@ -102,15 +102,29 @@ class UploadFilesView(View):
         
         for item in xml_data:
             barcode = item['barcode']
+            # Datetime qiymatlarini to'g'ri ishlashini ta'minlash
+            received_date = xlsx_data.get(barcode, {}).get('received_date')
+            send_date = xlsx_data.get(barcode, {}).get('send_date')
+            last_event_date = xlsx_data.get(barcode, {}).get('last_event_date')
+            
+            # Agar datetime qiymatlari mavjud bo'lsa, ularni timezone-aware qilish
+            if received_date:
+                received_date = timezone.make_aware(received_date, timezone.get_current_timezone()) if not timezone.is_aware(received_date) else received_date
+            if send_date:
+                send_date = timezone.make_aware(send_date, timezone.get_current_timezone()) if not timezone.is_aware(send_date) else send_date
+            if last_event_date:
+                last_event_date = timezone.make_aware(last_event_date, timezone.get_current_timezone()) if not timezone.is_aware(last_event_date) else last_event_date
+            
+            # MailItem modelini yangilash yoki yaratish
             mail_item, created = MailItem.objects.update_or_create(
                 barcode=barcode,
                 defaults={
                     'batch': item['batch'],
                     'weight': item['weight'],
-                    'last_event_name': xlsx_data.get(barcode, {}).get('last_event_name', []),
-                    'received_date': xlsx_data.get(barcode, {}).get('received_date'),
-                    'send_date': xlsx_data.get(barcode, {}).get('send_date'),
-                    'last_event_date': xlsx_data.get(barcode, {}).get('last_event_date'),
+                    'last_event_name': xlsx_data.get(barcode, {}).get('last_event_name', ''),
+                    'received_date': received_date,
+                    'send_date': send_date,
+                    'last_event_date': last_event_date,
                 }
             )
         
