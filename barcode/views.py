@@ -111,20 +111,23 @@ class UploadFilesView(View):
             if received_date:
                 if isinstance(received_date, str):  # Agar bu satr bo'lsa, datetime formatini parse qilamiz
                     received_date = pd.to_datetime(received_date, errors='coerce')
-                if not timezone.is_aware(received_date) and pd.notna(received_date):
-                    received_date = timezone.make_aware(received_date, timezone.get_current_timezone())
+                if pd.notna(received_date):  # NaTni tekshirish
+                    if not timezone.is_aware(received_date):
+                        received_date = timezone.make_aware(received_date, timezone.get_current_timezone())
             
             if send_date:
                 if isinstance(send_date, str):  # Agar bu satr bo'lsa, datetime formatini parse qilamiz
                     send_date = pd.to_datetime(send_date, errors='coerce')
-                if not timezone.is_aware(send_date) and pd.notna(send_date):
-                    send_date = timezone.make_aware(send_date, timezone.get_current_timezone())
+                if pd.notna(send_date):  # NaTni tekshirish
+                    if not timezone.is_aware(send_date):
+                        send_date = timezone.make_aware(send_date, timezone.get_current_timezone())
             
             if last_event_date:
                 if isinstance(last_event_date, str):  # Agar bu satr bo'lsa, datetime formatini parse qilamiz
                     last_event_date = pd.to_datetime(last_event_date, errors='coerce')
-                if not timezone.is_aware(last_event_date) and pd.notna(last_event_date):
-                    last_event_date = timezone.make_aware(last_event_date, timezone.get_current_timezone())
+                if pd.notna(last_event_date):  # NaTni tekshirish
+                    if not timezone.is_aware(last_event_date):
+                        last_event_date = timezone.make_aware(last_event_date, timezone.get_current_timezone())
             
             # MailItem modelini yangilash yoki yaratish
             mail_item, created = MailItem.objects.update_or_create(
