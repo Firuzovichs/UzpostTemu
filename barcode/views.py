@@ -173,9 +173,8 @@ class MailItemAllListView(APIView):
         # Last event name (listning oxirgi elementi bo‘yicha filter)
         last_event_name = request.GET.get('last_event_name')
         if last_event_name:
-            filters &= Q(last_event_name__contains=[last_event_name])  # List oxirgi elementi bo‘yicha qidirish
+            mail_items = [item for item in mail_items if item.last_event_name and item.last_event_name[-1] == last_event_name]
 
-        # Sana bo‘yicha filtrlash
         date_fields = ['send_date', 'received_date', 'last_event_date']
         for field in date_fields:
             date_value = request.GET.get(field)
