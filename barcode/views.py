@@ -171,9 +171,7 @@ class MailItemAllListView(APIView):
             filters &= Q(city__icontains=city)  # City bo‘yicha filter
 
         # Last event name (listning oxirgi elementi bo‘yicha filter)
-        last_event_name = request.GET.get('last_event_name')
-        if last_event_name:
-            mail_items = [item for item in mail_items if item.last_event_name and item.last_event_name[-1] == last_event_name]
+        
 
         date_fields = ['send_date', 'received_date', 'last_event_date']
         for field in date_fields:
@@ -191,7 +189,9 @@ class MailItemAllListView(APIView):
 
         # MailItem modelini filtratsiya qilish
         mail_items = MailItem.objects.filter(filters).order_by('-updated_at')
-        
+        last_event_name = request.GET.get('last_event_name')
+        if last_event_name:
+            mail_items = [item for item in mail_items if item.last_event_name and item.last_event_name[-1] == last_event_name]
         # Sahifalashni qo‘shish
         paginator = MailItemPagination()  # Pagination obyektini yaratish
         paginated_mail_items = paginator.paginate_queryset(mail_items, request)  # Querysetni sahifalash
