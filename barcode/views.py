@@ -31,6 +31,88 @@ from django.contrib.auth import authenticate
 from .serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
+from django.http import JsonResponse, HttpResponse
+import pandas as pd
+from django.views import View
+from django.core.files.storage import FileSystemStorage
+import os
+
+
+def parse_xml(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    namespace = {'ips': 'http://upu.int/ips'}
+    
+    data = []
+    for mail_item in root.findall('ips:MailItem', namespace):
+        barcode = mail_item.get('ItemId')
+        weight = float(mail_item.find('ips:ItemWeight', namespace).text)
+        batch = mail_item.find('ips:Misc1', namespace).text
+        
+        data.append({
+            'barcode': barcode,
+            'weight': weight,
+            'batch': batch
+        })
+    
+    return data
+
+def parse_xlsx(file_path):
+    df = pd.read_excel(file_path)
+    records = {}
+    
+    for _, row in df.iterrows():
+        barcode = str(row['Номер заказа']).strip()
+        last_event_name = row['Текущий статус']
+        received_date = row['Дата создания']
+        send_date = row['Дата доставки']
+        last_event_date = row['Дата последнего обновления статуса']
+        
+        records[barcode] = {
+            'last_event_name': last_event_name,
+            'received_date': received_date,
+            'send_date': send_date,
+            'last_event_date': last_event_date
+        }
+    
+    return records
+
+class UploadFilesView(View):
+    def post(self, request):
+        if 'xml_file' not in request.FILES or 'xlsx_file' not in request.FILES:
+            return JsonResponse({'error': 'Both XML and XLSX files are required'}, status=400)
+        
+        xml_file = request.FILES['xml_file']
+        xlsx_file = request.FILES['xlsx_file']
+        
+        fs = FileSystemStorage()
+        xml_filename = fs.save(xml_file.name, xml_file)
+        xlsx_filename = fs.save(xlsx_file.name, xlsx_file)
+        
+        xml_path = fs.path(xml_filename)
+        xlsx_path = fs.path(xlsx_filename)
+        
+        xml_data = parse_xml(xml_path)
+        xlsx_data = parse_xlsx(xlsx_path)
+        
+        for item in xml_data:
+            barcode = item['barcode']
+            mail_item, created = MailItem.objects.update_or_create(
+                barcode=barcode,
+                defaults={
+                    'batch': item['batch'],
+                    'weight': item['weight'],
+                    'last_event_name': xlsx_data.get(barcode, {}).get('last_event_name', []),
+                    'received_date': xlsx_data.get(barcode, {}).get('received_date'),
+                    'send_date': xlsx_data.get(barcode, {}).get('send_date'),
+                    'last_event_date': xlsx_data.get(barcode, {}).get('last_event_date'),
+                }
+            )
+        
+        os.remove(xml_path)
+        os.remove(xlsx_path)
+        
+        return JsonResponse({'message': 'Files processed successfully'})
 
 
 
@@ -232,15 +314,12 @@ class BatchStatisticsAPIView(APIView):
             batch_name = batch["batch"]
             total_count = batch["total_count"]
 
-            # Ushbu batchdagi barcha MailItem obyektlarini olish
             items = MailItem.objects.filter(batch=batch_name)
 
-            # Statuslarni hisoblash uchun Counter
             status_counter = Counter()
 
-            # Oxirgi statuslarni hisoblash
             for item in items:
-                if item.last_event_name:  # List bo‘sh bo‘lmasa
+                if item.last_event_name:  
                     last_status = item.last_event_name[-1]  # Oxirgi elementni olish
                     status_counter[last_status] += 1
 
