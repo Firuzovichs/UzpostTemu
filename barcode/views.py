@@ -41,6 +41,7 @@ import os
 from rest_framework.parsers import MultiPartParser, FormParser
 
 class ExcelUploadView(APIView):
+    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
