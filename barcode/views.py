@@ -42,7 +42,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class ExcelUploadView(APIView):
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
+    permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -59,10 +59,7 @@ class ExcelUploadView(APIView):
             df = df[required_columns]
 
             # Sanalarni to'g'ri formatga aylantirish
-            # Send date (ISO 8601 formatida)
             df['Send date'] = pd.to_datetime(df['Send date'], errors='coerce')
-
-            # Received date va Last event date (DD.MM.YYYY yoki YYYY-MM-DD formatlari)
             df['Received date'] = pd.to_datetime(df['Received date'], format='%d.%m.%Y', errors='coerce')
             df['Last event date'] = pd.to_datetime(df['Last event date'], format='%d.%m.%Y', errors='coerce')
 
@@ -85,15 +82,16 @@ class ExcelUploadView(APIView):
                     'last_event_name': row.get('Last event name', [])
                 }
 
-                # MailItem modeliga qo'shish
                 mail_item = MailItem(**mail_item_data)
                 mail_items.append(mail_item)
 
-            # Ma'lumotlarni bazaga saqlash
-            MailItem.objects.bulk_create(mail_items)
-            
+            # Bulk create with batch size
+            batch_size = 1000  # Example batch size, you can adjust this based on your needs
+            for i in range(0, len(mail_items), batch_size):
+                MailItem.objects.bulk_create(mail_items[i:i + batch_size])
+
             return Response({"detail": "Fayl muvaffaqiyatli yuklandi va saqlandi!"}, status=status.HTTP_201_CREATED)
-        
+
         except Exception as e:
             return Response({"detail": f"Xatolik yuz berdi: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
