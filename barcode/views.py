@@ -57,6 +57,14 @@ class ExcelUploadView(APIView):
             required_columns = ['Barcode', 'Batch', 'Weight', 'Send date', 'City', 'Received date', 'Last event date', 'Last event name']
             df = df[required_columns]
 
+            # Sanalarni to'g'ri formatga aylantirish
+            # Send date (ISO 8601 formatida)
+            df['Send date'] = pd.to_datetime(df['Send date'], errors='coerce')
+
+            # Received date va Last event date (DD.MM.YYYY yoki YYYY-MM-DD formatlari)
+            df['Received date'] = pd.to_datetime(df['Received date'], format='%d.%m.%Y', errors='coerce')
+            df['Last event date'] = pd.to_datetime(df['Last event date'], format='%d.%m.%Y', errors='coerce')
+
             # Yangilangan ma'lumotlarni modelga kiritish
             mail_items = []
             for index, row in df.iterrows():
