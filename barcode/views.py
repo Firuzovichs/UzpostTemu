@@ -49,7 +49,7 @@ class ExcelUploadView(APIView):
         file = request.FILES.get('file')
         if not file:
             return Response({"detail": "Fayl topilmadi"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             # Excel faylini o'qish
             df = pd.read_excel(file, engine='openpyxl')
@@ -71,8 +71,9 @@ class ExcelUploadView(APIView):
             # Yangilangan ma'lumotlarni modelga kiritish
             mail_items = []
             for index, row in df.iterrows():
+                barcode = row['Barcode']
                 mail_item_data = {
-                    'barcode': row['Barcode'],
+                    'barcode': barcode,
                     'batch': row.get('Batch', None),
                     'weight': row['Weight'],
                     'send_date': row.get('Send date', None),
@@ -82,11 +83,13 @@ class ExcelUploadView(APIView):
                     'last_event_name': row.get('Last event name', [])
                 }
 
-                mail_item = MailItem(**mail_item_data)
-                mail_items.append(mail_item)
+                # Tekshirish: agar barcode bazada bor bo'lsa, uni yangilash
+                if not MailItem.objects.filter(barcode=barcode).exists():
+                    mail_item = MailItem(**mail_item_data)
+                    mail_items.append(mail_item)
 
             # Bulk create with batch size
-            batch_size = 1000  # Example batch size, you can adjust this based on your needs
+            batch_size = 1000
             for i in range(0, len(mail_items), batch_size):
                 MailItem.objects.bulk_create(mail_items[i:i + batch_size])
 
