@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemAllListView,BarcodeInfoView,BatchStatsView,MyTokenObtainPairView,UploadFilesView,frontend_view
+from barcode.views import MailItemAPIView,MailItemUpdateStatus,BatchStatisticsAPIView,MailItemAllListView,BarcodeInfoView,BatchStatsView,MyTokenObtainPairView,ExcelUploadView
 from rest_framework.urlpatterns import format_suffix_patterns
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -30,8 +30,7 @@ urlpatterns = [
     path('batch-stats/', BatchStatsView.as_view(), name='batch-stats'),
     path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('upload/', UploadFilesView.as_view(), name='upload_files'),
-    path('front/', frontend_view, name='frontend_view'),
+    path('upload_excel/', ExcelUploadView.as_view(), name='upload_excel'),
 ]
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'xml'])
 

@@ -38,118 +38,49 @@ import pandas as pd
 from django.views import View
 from django.core.files.storage import FileSystemStorage
 import os
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+from rest_framework.parsers import MultiPartParser, FormParser
 
-def parse_csv(file_path):
-    records = {}
-    with open(file_path, mode='r', encoding='utf-8') as file:
-        csv_reader = csv.reader(file, delimiter=',')
-        header = next(csv_reader)  # Sarlavha qatorini o'tkazib yuboramiz
-        for row in csv_reader:
-            barcode = row[0].strip()
-            last_event_name = row[1]
-            received_date = row[2]
-            send_date = row[3]
-            last_event_date = row[4]
-            
-            # Datetime qiymatlarini to'g'ri ishlashini ta'minlash
-            received_date = parse_date(received_date)
-            send_date = parse_date(send_date)
-            last_event_date = parse_date(last_event_date)
-            
-            records[barcode] = {
-                'last_event_name': last_event_name,
-                'received_date': received_date,
-                'send_date': send_date,
-                'last_event_date': last_event_date,
-            }
-    return records
+class ExcelUploadView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
 
-# Sana matnini datetime obyektiga o'zgartirish
-def parse_date(date_str):
-    if date_str:
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"detail": "Fayl topilmadi"}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            return datetime.datetime.strptime(date_str, '%d-%m-%Y %H:%M:%S')
-        except ValueError:
-            return None
-    return None
+            # Excel faylini o'qish
+            df = pd.read_excel(file, engine='openpyxl')
 
-# Fayllarni yuklash va tahlil qilish
-class UploadFilesView(View):
+            # Faqat kerakli ustunlarni tanlab olish
+            required_columns = ['Barcode', 'Batch', 'Weight', 'Send date', 'City', 'Received date', 'Last event date', 'Last event name']
+            df = df[required_columns]
 
-    def post(self, request):
-        if 'csv_file' not in request.FILES:
-            return JsonResponse({'error': 'CSV fayli talab qilinadi'}, status=400)
-        
-        csv_file = request.FILES['csv_file']
-        
-        fs = FileSystemStorage()
-        csv_filename = fs.save(csv_file.name, csv_file)
-        csv_path = fs.path(csv_filename)
-        
-        csv_data = parse_csv(csv_path)
-        
-        for barcode, data in csv_data.items():
-            # MailItem modelini yangilash yoki yaratish
-            mail_item, created = MailItem.objects.update_or_create(
-                barcode=barcode,
-                defaults={
-                    'last_event_name': data['last_event_name'],
-                    'received_date': data['received_date'],
-                    'send_date': data['send_date'],
-                    'last_event_date': data['last_event_date'],
+            # Yangilangan ma'lumotlarni modelga kiritish
+            mail_items = []
+            for index, row in df.iterrows():
+                mail_item_data = {
+                    'barcode': row['Barcode'],
+                    'batch': row.get('Batch', None),
+                    'weight': row['Weight'],
+                    'send_date': row.get('Send date', None),
+                    'city': row.get('City', None),
+                    'received_date': row.get('Received date', None),
+                    'last_event_date': row.get('Last event date', None),
+                    'last_event_name': row.get('Last event name', [])
                 }
-            )
-        
-        os.remove(csv_path)
-        
-        return JsonResponse({'message': 'Fayl muvaffaqiyatli qayta ishlandi'})
-frontend_html = '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        input, button { margin: 10px; padding: 10px; }
-    </style>
-</head>
-<body>
-    <h2>Upload XML and XLSX Files</h2>
-    <form id="uploadForm" method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="file" id="xmlFile" name="xml_file" accept=".xml" required>
-        <input type="file" id="xlsxFile" name="xlsx_file" accept=".xlsx" required>
-        <button type="submit">Upload</button>
-    </form>
-    <p id="status"></p>
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            let formData = new FormData();
-            formData.append('xml_file', document.getElementById('xmlFile').files[0]);
-            formData.append('xlsx_file', document.getElementById('xlsxFile').files[0]);
+
+                # MailItem modeliga qo'shish
+                mail_item = MailItem(**mail_item_data)
+                mail_items.append(mail_item)
+
+            # Ma'lumotlarni bazaga saqlash
+            MailItem.objects.bulk_create(mail_items)
             
-            let response = await fetch('/upload/', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value  // CSRF tokenni yuborish
-                }
-            });
-            let result = await response.json();
-            document.getElementById('status').innerText = result.message || result.error;
-        });
-    </script>
-</body>
-</html>
-'''
-
-def frontend_view(request):
-    return HttpResponse(frontend_html)
+            return Response({"detail": "Fayl muvaffaqiyatli yuklandi va saqlandi!"}, status=status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            return Response({"detail": f"Xatolik yuz berdi: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = TokenObtainPairSerializer
