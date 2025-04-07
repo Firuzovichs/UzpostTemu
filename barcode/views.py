@@ -79,8 +79,8 @@ class ExcelUploadView(APIView):
                         'weight': row['Weight'],
                         'send_date': row.get('Send date', None),
                         'city': row.get('City', None),
-                        'received_date': row.get('Received date', None).strftime('%Y-%m-%d') if row.get('Received date', None) else None,
-                        'last_event_date': row.get('Last event date', None).strftime('%Y-%m-%d') if row.get('Last event date', None) else None,
+                        'received_date': row.get('Received date', None).strftime('%d.%m.%Y') if row.get('Received date', None) else None,
+                        'last_event_date': row.get('Last event date', None).strftime('%d.%m.%Y') if row.get('Last event date', None) else None,
                         'last_event_name': row.get('Last event name', [])
                     }
                     mail_item = MailItem(**mail_item_data)
