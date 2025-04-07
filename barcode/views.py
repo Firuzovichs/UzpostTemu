@@ -40,8 +40,10 @@ from django.core.files.storage import FileSystemStorage
 import os
 from rest_framework.parsers import MultiPartParser, FormParser
 
+
 class ExcelUploadView(APIView):
     permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
+
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -64,6 +66,11 @@ class ExcelUploadView(APIView):
             # Received date va Last event date (DD.MM.YYYY yoki YYYY-MM-DD formatlari)
             df['Received date'] = pd.to_datetime(df['Received date'], format='%d.%m.%Y', errors='coerce')
             df['Last event date'] = pd.to_datetime(df['Last event date'], format='%d.%m.%Y', errors='coerce')
+
+            # NaT (Not a Time) qiymatlarni None bilan almashtirish
+            df['Send date'] = df['Send date'].where(df['Send date'].notna(), None)
+            df['Received date'] = df['Received date'].where(df['Received date'].notna(), None)
+            df['Last event date'] = df['Last event date'].where(df['Last event date'].notna(), None)
 
             # Yangilangan ma'lumotlarni modelga kiritish
             mail_items = []
