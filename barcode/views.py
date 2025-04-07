@@ -43,7 +43,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 class ExcelUploadView(APIView):
     permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinadi
-
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -67,10 +66,10 @@ class ExcelUploadView(APIView):
             df['Received date'] = pd.to_datetime(df['Received date'], format='%d.%m.%Y', errors='coerce')
             df['Last event date'] = pd.to_datetime(df['Last event date'], format='%d.%m.%Y', errors='coerce')
 
-            # NaT (Not a Time) qiymatlarni None bilan almashtirish
-            df['Send date'] = df['Send date'].where(df['Send date'].notna(), None)
-            df['Received date'] = df['Received date'].where(df['Received date'].notna(), None)
-            df['Last event date'] = df['Last event date'].where(df['Last event date'].notna(), None)
+            # NaT yoki None qiymatlarni None bilan almashtirish
+            df['Send date'] = df['Send date'].apply(lambda x: None if pd.isna(x) else x)
+            df['Received date'] = df['Received date'].apply(lambda x: None if pd.isna(x) else x)
+            df['Last event date'] = df['Last event date'].apply(lambda x: None if pd.isna(x) else x)
 
             # Yangilangan ma'lumotlarni modelga kiritish
             mail_items = []
