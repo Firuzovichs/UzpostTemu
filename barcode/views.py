@@ -72,19 +72,17 @@ class ExcelUploadView(APIView):
             mail_items = []
             for index, row in df.iterrows():
                 barcode = row['Barcode']
-                mail_item_data = {
-                    'barcode': barcode,
-                    'batch': row.get('Batch', None),
-                    'weight': row['Weight'],
-                    'send_date': row.get('Send date', None),
-                    'city': row.get('City', None),
-                    'received_date': row.get('Received date', None),
-                    'last_event_date': row.get('Last event date', None),
-                    'last_event_name': row.get('Last event name', [])
-                }
-
-                # Tekshirish: agar barcode bazada bor bo'lsa, uni yangilash
                 if not MailItem.objects.filter(barcode=barcode).exists():
+                    mail_item_data = {
+                        'barcode': barcode,
+                        'batch': row.get('Batch', None),
+                        'weight': row['Weight'],
+                        'send_date': row.get('Send date', None),
+                        'city': row.get('City', None),
+                        'received_date': row.get('Received date', None),
+                        'last_event_date': row.get('Last event date', None),
+                        'last_event_name': row.get('Last event name', [])
+                    }
                     mail_item = MailItem(**mail_item_data)
                     mail_items.append(mail_item)
 
