@@ -43,7 +43,7 @@ class MailItemStatsAPIView(APIView):
     def get(self, request):
         total = MailItem.objects.count()
 
-        on_way_count = MailItem.objects.filter(
+        completed = MailItem.objects.filter(
             last_event_name__0__isnull=False
         ).filter(
             last_event_name__endswith=["completed"]
@@ -55,7 +55,7 @@ class MailItemStatsAPIView(APIView):
             last_event_name__endswith=["returning_to_origin"]
         ).count()
 
-        other_count = total - on_way_count
+        other_count = total - completed + return_status
 
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
@@ -66,8 +66,8 @@ class MailItemStatsAPIView(APIView):
                 "percent": "100%"
             },
             "on_way_items": {
-                "count": on_way_count,
-                "percent": f"{percentage(on_way_count)}%"
+                "count": completed,
+                "percent": f"{percentage(completed)}%"
             },
             "other_items": {
                 "count": other_count,
@@ -125,7 +125,6 @@ class ExcelUploadView(APIView):
                     mail_item = MailItem(**mail_item_data)
                     mail_items.append(mail_item)
 
-            # Bulk create with batch size
             batch_size = 1000
             for i in range(0, len(mail_items), batch_size):
                 MailItem.objects.bulk_create(mail_items[i:i + batch_size])
