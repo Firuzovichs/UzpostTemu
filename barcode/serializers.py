@@ -26,3 +26,7 @@ class TokenObtainPairSerializer(serializers.Serializer):
             return {'access': str(refresh.access_token), 'refresh': str(refresh)}
         else:
             raise serializers.ValidationError("Invalid phone number or password.")
+
+class CityBarcodeCountSerializer(serializers.Serializer):
+    city = serializers.CharField()
+    barcode_count = serializers.IntegerField()

@@ -1,6 +1,4 @@
 import xml.etree.ElementTree as ET
-import datetime
-import csv
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,15 +8,11 @@ from rest_framework_xml.parsers import XMLParser
 from django.utils.dateparse import parse_datetime
 from django.db import IntegrityError
 import threading
-from django.utils import timezone
 import requests
 import json
 from rest_framework.pagination import PageNumberPagination
 from collections import Counter
-from django.db import models
-from datetime import timedelta
 from collections import Counter
-from django.db import models
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import MailItem
@@ -26,20 +20,22 @@ from django.db.models import Count
 from django.utils.timezone import now
 from django.db.models import Sum, Count
 from rest_framework.permissions import AllowAny,IsAuthenticated
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import generics
-from django.contrib.auth import authenticate
-from .serializers import TokenObtainPairSerializer
+from .serializers import TokenObtainPairSerializer,CityBarcodeCountSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponse
 import pandas as pd
-from django.views import View
-from django.core.files.storage import FileSystemStorage
-import os
 from rest_framework.parsers import MultiPartParser, FormParser
 
+
+class CityBarcodeCountView(APIView):
+    def get(self, request):
+        # Har bir city uchun barcode'lar sonini hisoblash
+        data = MailItem.objects.values('city').annotate(barcode_count=Count('barcode')).filter(city__isnull=False).order_by('city')
+
+        # Serializerga yuborish uchun moslashtirish
+        serializer = CityBarcodeCountSerializer(data, many=True)
+
+        return Response(serializer.data)
 
 class MailItemStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]  # Agar ochiq bo'lishini istasangiz: [AllowAny]
