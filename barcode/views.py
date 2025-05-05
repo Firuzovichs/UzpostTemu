@@ -41,6 +41,39 @@ import os
 from rest_framework.parsers import MultiPartParser, FormParser
 
 
+class MailItemStatsAPIView(APIView):
+    permission_classes = [IsAuthenticated]  # Agar ochiq bo'lishini istasangiz: [AllowAny]
+
+    def get(self, request):
+        total = MailItem.objects.count()
+
+        on_way_count = MailItem.objects.filter(
+            last_event_name__0__isnull=False
+        ).filter(
+            last_event_name__endswith=["On way"]
+        ).count()
+
+        other_count = total - on_way_count
+
+        def percentage(count):
+            return round((count / total) * 100, 2) if total > 0 else 0
+
+        return Response({
+            "total_items": {
+                "count": total,
+                "percent": "100%"
+            },
+            "on_way_items": {
+                "count": on_way_count,
+                "percent": f"{percentage(on_way_count)}%"
+            },
+            "other_items": {
+                "count": other_count,
+                "percent": f"{percentage(other_count)}%"
+            }
+        })
+
+
 class ExcelUploadView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
