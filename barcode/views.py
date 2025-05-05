@@ -46,7 +46,13 @@ class MailItemStatsAPIView(APIView):
         on_way_count = MailItem.objects.filter(
             last_event_name__0__isnull=False
         ).filter(
-            last_event_name__endswith=["On way"]
+            last_event_name__endswith=["completed"]
+        ).count()
+
+        return_status = MailItem.objects.filter(
+            last_event_name__0__isnull=False
+        ).filter(
+            last_event_name__endswith=["returning_to_origin"]
         ).count()
 
         other_count = total - on_way_count
@@ -66,6 +72,10 @@ class MailItemStatsAPIView(APIView):
             "other_items": {
                 "count": other_count,
                 "percent": f"{percentage(other_count)}%"
+            },
+             "return": {
+                "count": return_status,
+                "percent": f"{percentage(return_status)}%"
             }
         })
 
@@ -406,6 +416,10 @@ class MailItemUpdateStatus(APIView):
             if status_text == "completed" or status_text == "issued_to_recipient":
                 mail_item.last_event_name.append("completed")
                 mail_item.last_event_date = event_date
+            if status_text == "returning_to_origin":
+                mail_item.last_event_name.append(status_text)
+                mail_item.last_event_date = event_date
+            
 
 
             

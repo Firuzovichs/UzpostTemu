@@ -26,10 +26,8 @@ class OrderAdmin(admin.ModelAdmin):
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import path
-from django.http import HttpResponse
 from django import forms
 from django.template.response import TemplateResponse
-from .models import MailItem
 import xml.etree.ElementTree as ET
 from django.utils.dateparse import parse_datetime
 
