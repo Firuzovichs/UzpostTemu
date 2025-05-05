@@ -44,16 +44,12 @@ class MailItemStatsAPIView(APIView):
         total = MailItem.objects.count()
 
         completed = MailItem.objects.filter(
-            last_event_name__0__isnull=False
-        ).filter(
-            last_event_name__endswith=["completed"]
-        ).count()
+    last_event_name__contains=["completed"]
+).count()
 
         return_status = MailItem.objects.filter(
-            last_event_name__0__isnull=False
-        ).filter(
-            last_event_name__endswith=["returning_to_origin"]
-        ).count()
+    last_event_name__contains=["returning_to_origin"]
+).count()
 
         other_count = total - completed + return_status
 
