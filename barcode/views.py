@@ -51,7 +51,7 @@ class MailItemStatsAPIView(APIView):
     last_event_name__contains=["returning_to_origin"]
 ).count()
 
-        other_count = total - completed + return_status
+        other_count = total - completed - return_status
 
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
