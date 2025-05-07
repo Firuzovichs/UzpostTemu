@@ -26,7 +26,17 @@ from django.db.models import Q
 import pandas as pd
 from rest_framework.parsers import MultiPartParser, FormParser
 
+class CityMailItemCountView(APIView):
+    def get(self, request):
+        data = (
+            MailItem.objects
+            .values('city')  # Guruhlash uchun
+            .annotate(count=Count('id'))  # Har bir guruh uchun sanash
+            .order_by('-count')  # Ixtiyoriy: ko‘pdan kamga qarab tartiblash
+        )
 
+        return Response(data, status=status.HTTP_200_OK)
+    
 class CityBarcodeCountView(APIView):
     def get(self, request):
         # Har bir city uchun barcode'lar sonini hisoblash
