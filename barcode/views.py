@@ -367,7 +367,11 @@ class MailItemUpdateStatus(APIView):
         barcode = data.get("order_number") 
         warehouse_name = data.get("warehouse_name") 
         status_text = data.get("status")  
-        event_date = parse_datetime(data.get("date"))  
+        date_value = data.get("date")
+        if isinstance(date_value, str):
+            event_date = parse_datetime(date_value)
+        else:
+            return Response({"error": "Invalid or missing 'date' field"}, status=400) 
 
         try:
             mail_item = MailItem.objects.get(barcode=barcode)
