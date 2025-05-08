@@ -26,7 +26,7 @@ from django.db.models import Q
 import pandas as pd
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models.expressions import RawSQL
-from django.db.models import Func, F, IntegerField, Q
+from django.db.models import Func, F, IntegerField, Q, CharField
 
 class CityMailItemCountView(APIView):
     def get(self, request):
