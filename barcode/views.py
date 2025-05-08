@@ -30,31 +30,27 @@ from django.db.models import Func, F, IntegerField, Q, CharField
 from django.db.models.functions import TruncMonth
 import calendar
 
-
 class ReceivedDateMonthCountView(APIView):
     def get(self, request):
-        # received_date bo'yicha oylar bo'yicha guruhlash va hisoblash
         result = (
             MailItem.objects
-            .annotate(month=TruncMonth('received_date'))  # received_datedan faqat oy qismini olish
-            .values('month')  # faqat oy qismi
-            .annotate(count=Count('id'))  # har bir oy uchun elementlar sonini hisoblash
-            .order_by('-month')  # Eng oxirgi oydan boshlash
+            .filter(received_date__isnull=False)  # <--- null qiymatlar tashlab yuboriladi
+            .annotate(month=TruncMonth('received_date'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('-month')
         )
 
-        # Natijani oy nomlari bilan chiqarish
         result_with_names = []
         for item in result:
-            month_name = calendar.month_name[item['month'].month]  # Oy nomini olish
+            month_name = calendar.month_name[item['month'].month]
             result_with_names.append({
                 "month": month_name,
                 "year": item['month'].year,
                 "count": item['count']
             })
 
-        # Natijani JSON formatida qaytarish
         return Response(result_with_names, status=status.HTTP_200_OK)
-        
 
 
 class CityMailItemCountView(APIView):
