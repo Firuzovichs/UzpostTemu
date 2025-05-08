@@ -51,15 +51,8 @@ class MailItemStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]  # Agar ochiq bo'lishini istasangiz: [AllowAny]
 
     def get(self, request):
-        total = MailItem.objects.annotate(
-            last_event=RawSQL(
-                "last_event_name[array_length(last_event_name, 1)]",
-                []
-            )
-        ).exclude(
-            last_event="On way"
-        ).count()
-
+        total = MailItem.objects.count()
+        
         completed = MailItem.objects.filter(
     last_event_name__contains=["completed"]
 ).count()
@@ -68,7 +61,14 @@ class MailItemStatsAPIView(APIView):
     last_event_name__contains=["returning_to_origin"]
 ).count()
 
-        other_count = total - completed - return_status
+        other_count = total = MailItem.objects.annotate(
+            last_event=RawSQL(
+                "last_event_name[array_length(last_event_name, 1)]",
+                []
+            )
+        ).exclude(
+            Q(last_event="On way") | Q(last_event="Completed")
+        ).count()
 
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
