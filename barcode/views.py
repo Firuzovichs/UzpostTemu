@@ -61,7 +61,7 @@ class MailItemStatsAPIView(APIView):
     last_event_name__contains=["returning_to_origin"]
 ).count()
 
-        other_count = total = MailItem.objects.annotate(
+        other_count = MailItem.objects.annotate(
             last_event=RawSQL(
                 "last_event_name[array_length(last_event_name, 1)]",
                 []
