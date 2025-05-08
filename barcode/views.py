@@ -51,7 +51,14 @@ class MailItemStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]  # Agar ochiq bo'lishini istasangiz: [AllowAny]
 
     def get(self, request):
-        total = MailItem.objects.count()
+        total = MailItem.objects.annotate(
+            last_event=RawSQL(
+                "last_event_name[array_length(last_event_name, 1)]",
+                []
+            )
+        ).exclude(
+            last_event="On way"
+        ).count()
 
         completed = MailItem.objects.filter(
     last_event_name__contains=["completed"]
