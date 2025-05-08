@@ -55,6 +55,7 @@ class JsonbArrayLength(Func):
 class JsonbArrayElement(Func):
     function = 'jsonb_array_element'
     arity = 2  # jsonb, index
+    output_field = CharField()
     
 class MailItemStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]  # Agar ochiq bo'lishini istasangiz: [AllowAny]
