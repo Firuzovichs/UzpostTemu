@@ -73,6 +73,7 @@ class MailItemStatsAPIView(APIView):
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
 
+
         return Response({
             "total_items": {
                 "count": total,
