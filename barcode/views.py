@@ -71,15 +71,7 @@ class MailItemStatsAPIView(APIView):
     last_event_name__contains=["returning_to_origin"]
 ).count()
 
-        other_count = MailItem.objects.annotate(
-            array_len=JsonbArrayLength(F('last_event_name')),
-            last_event=JsonbArrayElement(
-                F('last_event_name'),
-                F('array_len') - 1
-            )
-        ).exclude(
-            Q(last_event='On way') | Q(last_event='completed')
-        ).count()
+        other_count = total - completed - return_status
 
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
