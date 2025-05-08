@@ -25,6 +25,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
 import pandas as pd
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.db.models.expressions import RawSQL
 
 class CityMailItemCountView(APIView):
     def get(self, request):
