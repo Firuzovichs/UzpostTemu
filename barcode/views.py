@@ -26,6 +26,7 @@ from django.db.models import Q
 import pandas as pd
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models.expressions import RawSQL
+from django.db.models import Func, F, IntegerField, Q
 
 class CityMailItemCountView(APIView):
     def get(self, request):
@@ -47,7 +48,14 @@ class CityBarcodeCountView(APIView):
         serializer = CityBarcodeCountSerializer(data, many=True)
 
         return Response(serializer.data)
+class JsonbArrayLength(Func):
+    function = 'jsonb_array_length'
+    output_field = IntegerField()
 
+class JsonbArrayElement(Func):
+    function = 'jsonb_array_element'
+    arity = 2  # jsonb, index
+    
 class MailItemStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]  # Agar ochiq bo'lishini istasangiz: [AllowAny]
 
@@ -62,7 +70,15 @@ class MailItemStatsAPIView(APIView):
     last_event_name__contains=["returning_to_origin"]
 ).count()
 
-        other_count = total - completed - return_status
+        other_count = MailItem.objects.annotate(
+            array_len=JsonbArrayLength(F('last_event_name')),
+            last_event=JsonbArrayElement(
+                F('last_event_name'),
+                F('array_len') - 1
+            )
+        ).exclude(
+            Q(last_event='On way') | Q(last_event='completed')
+        ).count()
 
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
