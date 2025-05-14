@@ -425,7 +425,9 @@ class MailItemUpdateStatus(APIView):
 
             if status_text == "sent_to_customs":
                 mail_item.last_event_name.append(status_text)
+                mail_item.received_date = event_date
                 mail_item.last_event_date = event_date
+                mail_item.save(update_fields=['city', 'last_event_name','received_date', 'last_event_date','updated_at'])
             if status_text == "returned_from_customs":
                 mail_item.last_event_name.append(status_text)
                 mail_item.last_event_date = event_date
