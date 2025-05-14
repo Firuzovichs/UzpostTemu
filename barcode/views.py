@@ -97,8 +97,7 @@ class MailItemStatsAPIView(APIView):
 ).count()
 
         other_count = MailItem.objects.exclude(
-            Q(last_event_name__contains="completed") |
-            Q(last_event_name__contains="returning_to_origin")
+             Q(last_event_name="On way")
         ).count()
 
         def percentage(count):
