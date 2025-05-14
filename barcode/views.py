@@ -96,7 +96,10 @@ class MailItemStatsAPIView(APIView):
     last_event_name__contains=["returning_to_origin"]
 ).count()
 
-        other_count = total - completed - return_status
+        other_count = MailItem.objects.exclude(
+            Q(last_event_name__contains="completed") |
+            Q(last_event_name__contains="returning_to_origin")
+        ).count()
 
         def percentage(count):
             return round((count / total) * 100, 2) if total > 0 else 0
@@ -483,7 +486,7 @@ class MailItemUpdateStatus(APIView):
 
 
 class MailItemAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # Bu API uchun autentifikatsiya talab qilinmaydi
+    permission_classes = [IsAuthenticated]  
 
     parser_classes = [XMLParser]  
 
