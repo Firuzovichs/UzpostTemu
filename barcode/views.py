@@ -97,8 +97,6 @@ class MailItemStatsAPIView(APIView):
 ).count()
 
         other_count = MailItem.objects.exclude(
-            Q(last_event_name__icontains="completed") |
-            Q(last_event_name__icontains="returning_to_origin") |
             Q(last_event_name=["On way"])
         ).count()
 
